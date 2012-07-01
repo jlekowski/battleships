@@ -1,0 +1,205 @@
+
+/**
+ * Style for the interface
+ *
+ * @author     Jerzy Lekowski <jerzy@lekowski.pl>
+ * @version    0.1b
+ * @link       http://dev.lekowski.pl
+ * @since      File available since Release 0.1b
+ *
+ */
+
+body {
+    font: 14px Verdana;
+}
+
+
+/* CSS for notifications */
+.warning {
+    background-color: #feefb3;
+    color: #9f6000;
+    border: 1px solid;
+    padding: 4px;
+    font-size: 13px;
+}
+
+/* CSS for menu */
+div.menu {
+    padding: 3px;
+    margin-bottom: 10px;
+}
+
+
+/* CSS for board layout */
+div.board_container, div.board, div.board div {
+    float: left;
+}
+
+div.board_container {
+    margin-right: 30px;
+}
+
+div.board_menu {
+    text-align: center;
+    padding: 0 0 10px 15px;
+}
+
+div.board_menu span {
+    border: 1px solid;
+    padding: 1px 20px;
+    display: block;
+}
+
+div.board_menu input {
+    display: none;
+    font: inherit;
+    text-align: center;
+    border-width: 1px 0;
+    border-style: dotted;
+    padding: 1px 0;
+    margin: 0;
+    background-color: #ff0;
+    width: 100%;
+}
+
+div.board div div {
+    float: none;
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+    width: 30px;
+    height: 30px;
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+
+/*div.board:first-of-type div div {
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+}
+
+div.board:nth-of-type(1) div div {
+    border-bottom: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+}*/
+
+div.board div:first-child div {
+    border-bottom-color: transparent;
+    width: 15px;
+}
+
+div.board div div:first-child {
+    border-right-color: transparent;
+    height: 20px;
+    text-align: center;
+}
+
+
+/* CSS for board cells */
+div.board div.ship {
+    background-color: #00f;
+}
+
+div.board div.miss {
+    background-color: #f00;
+}
+
+div.board div.hit {
+    background-color: #88f;
+}
+
+
+/* CSS for log div */
+div.log {
+    display: none;
+    font-size: 11px;
+    font-family: monospace;
+    border: 1px solid;
+    float: left;
+    padding-left: 10px;
+    padding-right: 5px;
+    height: 363px;
+    width: 250px;
+    overflow: auto;
+    word-wrap: break-word;
+}
+
+
+/* Update button for debug mode */
+#update {
+    display: none;
+}
+
+
+/* link for the opponent to join the game */
+#game_link {
+    float: left;
+    clear: both;
+    margin: 15px 0 -20px 15px;
+}
+
+
+/* chatbox */
+#chatbox {
+    float: left;
+    clear: both;
+    margin: 30px 0 0 15px;
+    width: 665px;
+    height: 123px;
+    border: 1px solid;
+}
+
+#chatbox * {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 10px;
+}
+
+#chatbox div.chats {
+    height: 108px;
+    overflow: auto;
+}
+
+#chatbox div.chats p {
+    margin: 0;
+}
+
+#chatbox div.chats p:nth-child(odd) {
+    background-color: #fff;
+}
+
+#chatbox div.chats p:nth-child(even) {
+    background-color: #ccf;
+}
+
+#chatbox div.chats span.time {
+    font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;
+    font-size: 9px;
+}
+
+#chatbox div.chats span.name {
+    font-weight: bold;
+}
+
+#chatbox div.prompt {
+    height: 14px;
+    border-top: 1px solid;
+    background-color: #000;
+}
+
+#chatbox div.prompt * {
+    float: left;
+    padding: 1px 0 1px 3px;
+    margin: 0;
+}
+
+#chatbox div.prompt p {
+    width: 14px;
+    color: #fff;
+}
+
+#chatbox div.prompt input {
+    height: 12px;
+    border: none;
+    width: 645px;
+}
