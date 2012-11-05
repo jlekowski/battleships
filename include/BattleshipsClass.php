@@ -365,8 +365,11 @@ class Battleships {
 
 
         foreach( $ships as $value ) {
-            $position_y = array_search($value[0], self::$axis_y);
-            $position_x = array_search($value[1], self::$axis_x);
+            $coord_y = $value[0];
+            $coord_x = substr($value, 1);
+
+            $position_y = array_search($coord_y, self::$axis_y);
+            $position_x = array_search($coord_x, self::$axis_x);
 
             if( $position_y === false || $position_x === false ) {
                 return false;
