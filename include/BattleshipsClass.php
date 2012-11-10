@@ -13,67 +13,145 @@
  * @todo       getGame() not nice prefix and method name
  * @todo       game_id as an argument or from $_SESSION ?
  * @todo       last shot and whose turn it is
- * @todo       _prefix for privates
  * @todo       code formatting change
+ * @todo       htmlentities before data insert not necessarily the best idea
  *
  *
  */
+class Battleships
+{
 
-class Battleships {
+    /**
+     * PDO Object
+     *
+     * Example: object(PDO)#2 (0) { }
+     *
+     * @var object
+     */
+    private $_DB;
 
-    # Variables
-    private $db_obj;
+    /**
+     * Error variable
+     *
+     * Example: HY000 | 8 | attempt to write a readonly database
+     *
+     * @var string
+     */
+    private $_error;
 
-    private $error;
+    /**
+     * Array with Y axis elements
+     *
+     * Example: array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J");
+     *
+     * @var array
+     */
+    private static $_axisY = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J");
 
-    private static $axis_y = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J");
-    private static $axis_x = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    /**
+     * Array with X axis elements
+     *
+     * Example: array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+     *
+     * @var array
+     */
+    private static $_axisX = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-    public static $sessionUpdates = array(); // gathers updates when session is stopped
+    /**
+     * Used to store $_SESSION values when session is stopped
+     *
+     * Example: array('other_name' => "Player 2", 'last_event' => 142);
+     *
+     * @var array
+     */
+    public static $sessionUpdates = array();
 
 
-    #Getters
-    public function getError()    { return $this->error; }
-
-
-    # Methods
-    public function __construct() {
+    /**
+     * Initiates PDO Object and creates DB tables if required
+     *
+     * @return void
+     */
+    public function __construct()
+    {
         $file_exists = file_exists(SQLITE_PATH . SQLITE_FILE);
 
         try {
-            $this->db_obj = new PDO("sqlite:" . SQLITE_PATH . SQLITE_FILE);
+            $this->_DB = new PDO("sqlite:" . SQLITE_PATH . SQLITE_FILE);
         }
-        catch( PDOException $e ) {
-            $this->error = $e->getMessage();
+        catch (PDOException $e) {
+            $this->_setError($e->getMessage());
         }
 
-        if( $file_exists === false && is_null($this->error) ) {
-            $this->createTables();
+        if ($file_exists === false && is_null($this->getError())) {
+            $this->_createTables();
         }
     }
 
-
-    private function setDbError() {
-        $this->error = implode(' | ', $this->db_obj->errorInfo());
+    /**
+     * Returns Errors
+     *
+     * @return string Error
+     */
+    public function getError()
+    {
+        return $this->_error;
     }
 
+    /**
+     * Sets Errors
+     *
+     * @param string $error Error to be set
+     *
+     * @return void
+     */
+    private function _setError($error)
+    {
+        $this->_error = $error;
+    }
 
-    protected function query($query) {
-        $result = $this->db_obj->query( $query );
+    /**
+     * Sets DB Error variable
+     *
+     * Gets PDO errorInfo() result (array) and tranposes it into string
+     *
+     * @return void
+     */
+    private function _setDbError()
+    {
+        $error = implode(" | ", $this->_DB->errorInfo());
+        $this->_setError($error);
+    }
 
-        if( $result === false ) {
-            $this->setDbError();
+    /**
+     * Runs SQL Query and returns result (all records)
+     *
+     * @param string $query SQL Query
+     *
+     * @return array|false SQL Query result
+     */
+    protected function _query($query)
+    {
+        $result = $this->_DB->query($query);
+
+        if ($result === false) {
+            $this->_setDbError();
             return false;
         }
 
         return $result->fetchall(PDO::FETCH_ASSOC);
     }
 
-
-    private function createTables() {
+    /**
+     * Creates DB tables (CREATE TABLE) - games, events
+     *
+     * @return void
+     */
+    private function _createTables()
+    {
         $query = array();
 
-        # creating games table
+        // creating games table
         $query[] = "
             CREATE TABLE games (
                 id             INTEGER PRIMARY KEY,
@@ -87,7 +165,7 @@ class Battleships {
             )
         ";
 
-        # creating events table
+        // creating events table
         $query[] = "
             CREATE TABLE events (
                 id           INTEGER PRIMARY KEY,
@@ -99,30 +177,50 @@ class Battleships {
             )
         ";
 
-        foreach( $query as $value ) {
-            $this->query($value);
+        foreach ($query as $value) {
+            $this->_query($value);
         }
     }
 
-
-    private function escapeString($text, $esc_quotes = true) {
-        # don't escape serialized string (" -> &quot;)
+    /**
+     * Escape the text before inserting it to SQL Query
+     *
+     * Runs native escaping function, converts html special chars and removes html tags
+     *
+     * @param string $text Text to be escaped
+     * @param bool $esc_quotes Whether to escape quotes or not
+     *
+     * @return string Escaped text
+     */
+    private function _escapeString($text, $esc_quotes = true)
+    {
+        // don't escape serialized string (" -> &quot;)
         $flags = $esc_quotes ? ENT_COMPAT : ENT_NOQUOTES;
 
-        return $this->db_obj->quote( htmlentities(strip_tags($text), $flags) );
+        return $this->_DB->quote( htmlentities(strip_tags($text), $flags) );
     }
 
-
-    public function gameInitiate($hash = null) {
+    /**
+     * Initiates a game
+     *
+     * Either creates a new game or gets already created one if hash provided<br />
+     * Sets appropriate $_SESSION values
+     *
+     * @param string $hash Game hash
+     *
+     * @return bool Whether game was initiated successfully
+     */
+    public function initGame($hash = null)
+    {
         $_SESSION = array();
 
-        $game = is_null($hash) ? $this->gameCreate() : $this->getGameByHash($hash);
+        $game = is_null($hash) ? $this->_createGame() : $this->_getGameByHash($hash);
 
-        if( $game === false ) {
+        if ($game === false) {
             return false;
         }
 
-        $events        = $this->getEvents($game['id'], array('shot', 'join_game'));
+        $events        = $this->_getEvents($game['id'], array("shot", "join_game"));
 
         $player_number = $game['player_number'];
         $other_number  = $player_number == 1 ? 2 : 1;
@@ -142,7 +240,7 @@ class Battleships {
         $_SESSION['player_ships']    = $game[$player_prefix.'_ships'] != "" ? unserialize($game[$player_prefix.'_ships']) : array();
         $_SESSION['other_ships']     = $game[$other_prefix.'_ships']  != "" ? unserialize($game[$other_prefix.'_ships']) : array();
         $_SESSION['game_timestamp']  = $game['timestamp'];
-        $_SESSION['last_event']      = $this->getLastEvent($game['id'], $other_number);
+        $_SESSION['last_event']      = $this->_getLastEventId($game['id'], $other_number);
         $_SESSION['player_shots']    = array_key_exists($player_number, $shots) ? $shots[$player_number] : array();
         $_SESSION['other_shots']     = array_key_exists($other_number, $shots)  ? $shots[$other_number]  : array();
         $_SESSION['player_joined']   = array_key_exists($player_number, $game_joined);
@@ -150,20 +248,29 @@ class Battleships {
         $_SESSION['timezone_offset'] = 0;
 
         // for now there's no sense to add join_game event for player 1
-        if( $_SESSION['player_number'] == 2 && !$_SESSION['player_joined'] ) {
-            $this->gameJoin();
+        if ($_SESSION['player_number'] == 2 && !$_SESSION['player_joined']) {
+            $this->joinGame();
             /* @todo: generate hash, edit it in DB and redirect to the new */
         }
 
         return true;
     }
 
-
-    private function getGameByHash($hash) {
-        $esc_hash = $this->escapeString($hash);
+    /**
+     * Gets existing game
+     *
+     * Gets existing game from DB by hash
+     *
+     * @param string $hash Game hash
+     *
+     * @return array|false Game row from DB or false on error
+     */
+    private function _getGameByHash($hash)
+    {
+        $esc_hash = $this->_escapeString($hash);
 
         // what when 2 hashes found?
-        $query  = "
+        $query = "
             SELECT
                 *,
                 CASE WHEN player1_hash = " . $esc_hash . " THEN 1 ELSE 2 END AS player_number
@@ -173,13 +280,13 @@ class Battleships {
                    player1_hash = " . $esc_hash . "
                 OR player2_hash = " . $esc_hash . "
         ";
-        $result = $this->query($query);
+        $result = $this->_query($query);
 
-        if( $result === false ) {
+        if ($result === false) {
             return false;
         }
-        else if( count($result) == 0 ) {
-            $this->error = "Game (" . $hash . ") does not exist";
+        else if (count($result) == 0) {
+            $this->_setError("Game (" . $hash . ") does not exist");
             return false;
         }
 
@@ -187,12 +294,17 @@ class Battleships {
         return $result[0];
     }
 
+    /**
+     * Creates a new game
+     *
+     * @return array|false New game row from DB or false on error
+     */
+    private function _createGame()
+    {
+        $hash     = hash("md5", session_id() . microtime(true) . rand());
+        $temphash = hash("md5", $hash . rand());
 
-    private function gameCreate() {
-        $hash     = hash( 'md5', session_id() . microtime(true) . rand() );
-        $temphash = hash( 'md5', $hash . rand() );
-
-        $game     = array(
+        $game = array(
             'player1_hash'  => $hash,
             'player1_name'  => "Player 1",
             'player1_ships' => "",
@@ -204,17 +316,16 @@ class Battleships {
         );
 
         // uglyyyy
-        $query    = "
-            INSERT INTO
-                games (
-                    player1_hash,
-                    player1_name,
-                    player1_ships,
-                    player2_hash,
-                    player2_name,
-                    player2_ships,
-                    timestamp
-                )
+        $query = "
+            INSERT INTO games (
+                player1_hash,
+                player1_name,
+                player1_ships,
+                player2_hash,
+                player2_name,
+                player2_ships,
+                timestamp
+            )
             VALUES (
                 '" . $game['player1_hash']  . "',
                 '" . $game['player1_name']  . "',
@@ -226,20 +337,27 @@ class Battleships {
             )
         ";
 
-        $result = $this->query($query);
+        $result = $this->_query($query);
 
-        if( $result === false ) {
+        if ($result === false) {
             return false;
         }
 
-        $game['id'] = $this->db_obj->lastInsertId();
+        $game['id'] = $this->_DB->lastInsertId();
 
         return $game;
     }
 
-
-    public function updateName($player_name) {
-        $esc_player_name = $this->escapeString($player_name);
+    /**
+     * Updates player's name
+     *
+     * @param string $player_name Player's new name
+     *
+     * @return bool Whether name was updated successfully
+     */
+    public function updateName($player_name)
+    {
+        $esc_player_name = $this->_escapeString($player_name);
 
         $query = "
             UPDATE
@@ -250,21 +368,29 @@ class Battleships {
                 id = " . $_SESSION['game_id']
         ;
 
-        $result = $this->query($query);
+        $result = $this->_query($query);
 
-        if( $result === false ) {
+        if ($result === false) {
             return false;
         }
 
         // removing first and last '
         $_SESSION['player_name'] = substr($esc_player_name, 1, strlen($esc_player_name) - 2);
-        $this->addEvent('name_update', $_SESSION['player_name']);
+        $this->_addEvent('name_update', $_SESSION['player_name']);
 
         return true;
     }
 
-
-    public function getUpdates() {
+    /**
+     * Gets newest updates
+     *
+     * Gets updates which appeared since the last getUpdates() call<br />
+     * array(0 => array('action' => event_type, 'value' => event_value))
+     *
+     * @return array|false List of updates or false on error
+     */
+    public function getUpdates()
+    {
         $updates = array();
 
         $query = "
@@ -278,26 +404,26 @@ class Battleships {
                 AND player  = " . $_SESSION['other_number'] . "
         ";
 
-        $result = $this->query($query);
+        $result = $this->_query($query);
 
-        if( $result === false ) {
+        if ($result === false) {
             return false;
         }
 
 
-        foreach( $result as $value ) {
-            switch( $value['event_type'] ) {
-                case 'name_update':
+        foreach ($result as $value) {
+            switch ($value['event_type']) {
+                case "name_update":
                     $_SESSION['other_name'] = $value['event_value'];
                     self::$sessionUpdates['other_name'] = $_SESSION['other_name'];
                     break;
 
-                case 'start_game':
+                case "start_game":
                     $_SESSION['other_ships'] = unserialize($value['event_value']);
                     self::$sessionUpdates['other_ships'] = $_SESSION['other_ships'];
                     break;
 
-                case 'shot':
+                case "shot":
                     $_SESSION['other_shots'][] = $value['event_value'];
                     self::$sessionUpdates['other_shots'] = $_SESSION['other_shots'];
                     break;
@@ -306,13 +432,13 @@ class Battleships {
             $_SESSION['last_event'] = max($_SESSION['last_event'], $value['id']);
             self::$sessionUpdates['last_event'] = $_SESSION['last_event'];
 
-            if( $value['event_type'] == 'chat' ) {
+            if ($value['event_type'] == "chat") {
                 $event_value = array(
                     'text' => $value['event_value'],
                     'time' => date("Y-m-d H:i:s", $value['timestamp'] + $_SESSION['timezone_offset'])
                 );
             }
-            else if( $value['event_type'] == 'start_game' ) {
+            else if ($value['event_type'] == 'start_game') {
                 $event_value = true;
             }
             else {
@@ -325,10 +451,20 @@ class Battleships {
         return $updates;
     }
 
-
-    private function addEvent($event_type, $event_value = 1) {
-        $esc_event_type  = $this->escapeString($event_type, false);
-        $esc_event_value = $this->escapeString($event_value, false);
+    /**
+     * Inserts new event to the DB
+     *
+     * Gets existing game from DB by hash
+     *
+     * @param string $event_type Type of the event
+     * @param string $event_value Value of the event
+     *
+     * @return bool Whether event was inserted successfully
+     */
+    private function _addEvent($event_type, $event_value = 1)
+    {
+        $esc_event_type  = $this->_escapeString($event_type, false);
+        $esc_event_value = $this->_escapeString($event_value, false);
 
         $query = "
             INSERT INTO
@@ -348,30 +484,34 @@ class Battleships {
             )
         ";
 
-        $result = $this->query($query);
+        $result = $this->_query($query);
 
-        if( $result === false ) {
+        if ($result === false) {
             return false;
         }
 
         return true;
     }
 
-
-    public function startGame($ships) {
-        if( !is_array($ships) || !empty($_SESSION['player_ships']) ) {
+    /**
+     * Starts the game
+     *
+     * Updates the game with the ships provided
+     *
+     * @param array $ships Ships set by the player (Example: array("A1", "B4", "J10", ...))
+     *
+     * @return bool Whether the game started successfully
+     */
+    public function startGame($ships)
+    {
+        if (!is_array($ships) || !empty($_SESSION['player_ships'])) {
             return false;
         }
 
-
-        foreach( $ships as $value ) {
-            $coord_y = $value[0];
-            $coord_x = substr($value, 1);
-
-            $position_y = array_search($coord_y, self::$axis_y);
-            $position_x = array_search($coord_x, self::$axis_x);
-
-            if( $position_y === false || $position_x === false ) {
+        // check whether all coordinates are correct (e.g. A1, B4, J10)
+        foreach ($ships as $coords) {
+            if (self::_coordsInfo($coords) === false) {
+                $this->_setError("Ship's coordinates are incorrect (" . $coords . ")");
                 return false;
             }
         }
@@ -386,74 +526,102 @@ class Battleships {
                 id = " . $_SESSION['game_id']
         ;
 
-        $result = $this->query($query);
+        $result = $this->_query($query);
 
-        if( $result === false ) {
+        if ($result === false) {
             return false;
         }
 
-        $this->addEvent('start_game', serialize($ships));
+        $this->_addEvent("start_game", serialize($ships));
 
         $_SESSION['player_ships'] = $ships;
 
         return true;
     }
 
-
-    public function shot($coords) {
-        $coord_y = $coords[0];
-        $coord_x = substr($coords, 1);
-
-        $position_y = array_search($coord_y, self::$axis_y);
-        $position_x = array_search($coord_x, self::$axis_x);
-
-        if( $position_y === false || $position_x === false ) {
+    /**
+     * Adds a shot
+     *
+     * Check the coordinates of the shot and returns the result
+     *
+     * @param string $coords Shot coordinates (Example: "A1", "B4", "J10", ...)
+     *
+     * @return string Shot result (miss|sunk|hit)
+     */
+    public function addShot($coords)
+    {
+        if (self::_coordsInfo($coords) === false) {
+            $this->_setError("Shot's coordinates are incorrect (" . $coords . ")");
             return false;
         }
 
-        $this->addEvent('shot', $coords);
+        $this->_addEvent("shot", $coords);
         $_SESSION['player_shots'][] = $coords;
 
-        $shot = array_search($coords, $_SESSION['other_ships']);
-
-        $result = $shot === false ? "miss" : (self::check_sunk($coords) ? "sunk" : "hit");
+        // If other ship at these coordinates (if hit)
+        if (array_search($coords, $_SESSION['other_ships']) === false) {
+            $result = "miss";
+        }
+        // If other ship is sunk after this hit
+        else if (self::_checkSunk($coords)) {
+            $result = "sunk";
+        }
+        else {
+            $result = "hit";
+        }
 
         return $result;
     }
 
+    /**
+     * Checks if the shot sinks the ship
+     *
+     * Checks if all other masts has been hit
+     *
+     * @param string $coords Shot coordinates (Example: "A1", "B4", "J10", ...)
+     * @param int $direction Direction which is checked for ship's masts
+     *
+     * @return bool Whether the ship is sunk after this shot or not
+     */
+    private static function _checkSunk($coords, $direction = null)
+    {
+        $coordsInfo = self::_coordsInfo($coords);
+        if ($coordsInfo === false) {
+            $this->_setError("Coordinates are incorrect (" . $coords . ")");
+            return false;
+        }
 
-    private static function check_sunk($coords, $tendency = null) {
-        $coord_y    = $coords[0];
-        $coord_x    = substr($coords, 1);
         $check_sunk = true;
 
-        $position_y = array_search($coord_y, self::$axis_y);
-        $position_x = array_search($coord_x, self::$axis_x);
-
+        // neighbour coordinates, taking into consideration edge positions (A and J rows, 1 and 10 columns)
         $sunk_coords = array(
-            $position_y > 0 ? self::$axis_y[ $position_y - 1 ] . $coord_x : '',
-            $position_y < 9 ? self::$axis_y[ $position_y + 1 ] . $coord_x : '',
-            $position_x < 9 ? $coord_y . self::$axis_x[ $position_x + 1 ] : '',
-            $position_x > 0 ? $coord_y . self::$axis_x[ $position_x - 1 ] : ''
+            $coordsInfo['position_y'] > 0 ? self::$_axisY[$coordsInfo['position_y'] - 1] . $coordsInfo['coord_x'] : "",
+            $coordsInfo['position_y'] < 9 ? self::$_axisY[$coordsInfo['position_y'] + 1] . $coordsInfo['coord_x'] : "",
+            $coordsInfo['position_x'] < 9 ? $coordsInfo['coord_y'] . self::$_axisX[$coordsInfo['position_x'] + 1] : "",
+            $coordsInfo['position_x'] > 0 ? $coordsInfo['coord_y'] . self::$_axisX[$coordsInfo['position_x'] - 1] : ""
         );
 
-        foreach( $sunk_coords as $key => $value ) {
-            if( $value === '' || ($tendency !== null && $tendency !== $key) ) {
+        // try to find a mast which hasn't been hit
+        foreach ($sunk_coords as $key => $value) {
+            // if no coordinate on this side (end of the board) or direction is specified, but it's not the specified one
+            if ($value === "" || ($direction !== null && $direction !== $key)) {
                 continue;
             }
 
             $ship = array_search($value, $_SESSION['other_ships']);
             $shot = array_search($value, $_SESSION['player_shots']);
 
-            if( $ship !== false && $shot !== false ) {
-                $check_sunk = self::check_sunk( $value, $key );
+            // if there's a mast there and it's been hit, check this direction for more masts
+            if ($ship !== false && $shot !== false) {
+                $check_sunk = self::_checkSunk($value, $key);
             }
-            elseif( $ship !== false ) {
+            // if mast hasn't been hit, the the ship can't be sunk
+            elseif ($ship !== false) {
                 $check_sunk = false;
             }
 
 
-            if( $check_sunk === false ) {
+            if ($check_sunk === false) {
                 break;
             }
         }
@@ -461,22 +629,41 @@ class Battleships {
         return $check_sunk;
     }
 
-
-    public function getShots($game_id) {
-        $events = $this->getEvents($game_id, 'shot');
+    /**
+     * Gets shots for the game
+     *
+     * Returns all shots for a requested game
+     *
+     * @param int $game_id Id of the game
+     *
+     * @return array Shots for the game per player (Example: array(1 => array("A1", "B4", "J10"), 2 => array("C3", "F6", "I1"))
+     */
+    public function getShots($game_id)
+    {
+        $events = $this->_getEvents($game_id, 'shot');
         return array_key_exists('shot', $events) ? $events['shot'] : array();
     }
 
-
-    public function getChats($game_id) {
+    /**
+     * Gets chats for the game
+     *
+     * Returns all chats for a requested game
+     *
+     * @param int $game_id Id of the game
+     *
+     * @return array|false Chats for the game (Example: array(0 => array('name' => {player_name}, 'text' => "Hi!", 'time' => "2012-11-05 23:34"),  ...))
+     */
+    public function getChats($game_id)
+    {
         $chats = array();
 
-        $result = $this->getEvents($game_id, 'chat', true);
-        if( $result === false ) {
+        $result = $this->_getEvents($game_id, "chat", true);
+        if ($result === false) {
             return false;
         }
 
-        foreach( $result as $value ) {
+        // raw events result requested to build a custom array with chats' details
+        foreach ($result as $value) {
             $chats[] = array(
                 'name' => ($value['player'] == $_SESSION['player_number'] ? $_SESSION['player_name'] : $_SESSION['other_name']),
                 'text' => $value['event_value'],
@@ -487,8 +674,21 @@ class Battleships {
         return $chats;
     }
 
-
-    private function getEvents($game_id, $event_type = null, $raw = false) {
+    /**
+     * Gets events for the game
+     *
+     * Returns all events of requested type for a requested game.
+     * If not $event_type provided, returns all events.
+     * If $raw no specified, groups results by event type and player number.
+     *
+     * @param int $game_id Id of the game
+     * @param string|array|null $event_type Types of events to be returned (all if not/null provided)
+     * @param bool $raw Whether to return a query result or group the result by even_type and player_number
+     *
+     * @return array|false Events for the game (Example: array('chat' => array(1 => array(0 => "Hi!", 2 => ...), 'shot' => array(1 => array(0 => "A1", ...), ...)
+     */
+    private function _getEvents($game_id, $event_type = null, $raw = false)
+    {
         $events = array();
 
         $query = "
@@ -498,25 +698,35 @@ class Battleships {
                 events
             WHERE
                 game_id = " . $game_id . "
-                " . (is_null($event_type) ? "" : "AND event_type IN('".implode("','", (array)$event_type)."')") . "
-        ";
+                " . (is_null($event_type) ? "" : "AND event_type IN('".implode("','", (array)$event_type)."')")
+        ;
 
-        $result = $this->query($query);
+        $result = $this->_query($query);
 
-        if( $raw || $result === false ) {
+        if ($raw || $result === false) {
             return $result;
         }
 
-
-        foreach( $result as $value ) {
+        // group the response by event type and player number
+        foreach ($result as $value) {
             $events[ $value['event_type'] ][ $value['player'] ][] = $value['event_value'];
         }
 
         return $events;
     }
 
-
-    private function getLastEvent($game_id, $other_number) {
+    /**
+     * Gets the last event id for the game
+     *
+     * Returns last even ip for a specified game and a specified player.
+     *
+     * @param int $game_id Id of the game
+     * @param int $player Player number (1|2)
+     *
+     * @return int|false Id of the last event made by the player
+     */
+    private function _getLastEventId($game_id, $player)
+    {
         $query = "
             SELECT
                 MAX(id) AS id
@@ -524,38 +734,48 @@ class Battleships {
                 events
             WHERE
                     game_id = " . $game_id . "
-                AND player  = " . $other_number . "
+                AND player  = " . $player . "
             GROUP BY
                 game_id
         ";
 
-        $result = $this->query($query);
+        $result = $this->_query($query);
 
-        if( $result === false ) {
+        if ($result === false) {
             return false;
         }
 
         return empty($result) ? 0 : (int)$result[0]['id'];
     }
 
-
-    public static function getBattle() {
-        $prefixes = array( array("player", "other"), array("other", "player") );
+    /**
+     * Gets the current battle run and player's ships
+     *
+     * Returns the battle run and player ships' coordinates based on players' shots, grouping by player and shot with the shot result.
+     *
+     * Example: array('player_ships' => array("J10", "F5", ...),<br />
+     *    'player_shots' => array('A1' => "miss", 'C4' => "hit", ...),<br />
+     *    'other_shots' => array('J10' => "sunk", ...))
+     *
+     * @return array Battle run and players' ships
+     */
+    public static function getBattle()
+    {
+        $prefixes = array(array("player", "other"), array("other", "player"));
 
         $battle['player_ships'] = $_SESSION['player_ships'];
 
-        foreach( $prefixes as $prefix ) {
-            foreach( $_SESSION[ $prefix[0].'_shots' ] as $value ) {
-                if( array_search($value, $_SESSION[ $prefix[1].'_ships' ]) === false ) {
+        foreach ($prefixes as $prefix) {
+            foreach ($_SESSION[ $prefix[0].'_shots' ] as $value) {
+                if (array_search($value, $_SESSION[ $prefix[1].'_ships' ]) === false) {
                     $shot = "miss";
                 }
-                else if( self::check_sunk($value) ) {
+                else if (self::_checkSunk($value)) {
                     $shot = "sunk";
                 }
                 else {
                     $shot = "hit";
                 }
-
 
                 $battle[ $prefix[0].'_shots' ][$value] = $shot;
             }
@@ -564,51 +784,127 @@ class Battleships {
         return $battle;
     }
 
-
-    public function chat($text) {
-        return $this->addEvent('chat', $text);
+    /**
+     * Adds a chat
+     *
+     * Adds new 'chat' event
+     *
+     * @param string $text Chat text
+     *
+     * @return bool Whether 'chat' event was inserted successfully
+     */
+    public function addChat($text)
+    {
+        return $this->_addEvent("chat", $text);
     }
 
-
-    public function gameJoin() {
-        return $this->addEvent('join_game');
+    /**
+     * Marks that a player joined current game
+     *
+     * Adds new 'joing_game' event
+     *
+     * @return bool Whether 'join_game' event was inserted successfully
+     */
+    public function joinGame()
+    {
+        return $this->_addEvent("join_game");
     }
 
+    /**
+     * Converts standard coordinates to board index (numeric value)
+     *
+     * Standard coordinates are converted to indexes, e.g. "A1" -> "00", "B3" -> "12", "J10" -> "99"
+     *
+     * @param string $coords Coordinates (Example: "A1", "B4", "J10", ...)
+     *
+     * @return string Two indexes (Y and X) concatenated
+     */
+    private static function _toIndex($coords)
+    {
+        $coordsInfo = self::_coordsInfo($coords);
+        if ($coordsInfo === false) {
+            return false;
+        }
 
-    private static function _toIndex($coords) {
+        return $coordsInfo['position_y'] . $coordsInfo['position_x'];
+    }
+
+    /**
+     * Gives the detailed information about the coordinates
+     *
+     * Standard coordinates are split into Y and X axis values and appended with the index information.
+     *
+     * Example: "B3" -> array('coord_y' => "B", 'coord_x' => "3", 'position_y' => 1, 'position_x' => 2)
+     *
+     * @param string $coords Coordinates (Example: "A1", "B4", "J10", ...)
+     *
+     * @return array Split coordinates (Y and X) and indexes (Y and X)
+     */
+    private static function _coordsInfo($coords)
+    {
         $coord_y    = $coords[0];
         $coord_x    = substr($coords, 1);
 
-        $position_y = array_search($coord_y, self::$axis_y);
-        $position_x = array_search($coord_x, self::$axis_x);
+        $position_y = array_search($coord_y, self::$_axisY);
+        $position_x = array_search($coord_x, self::$_axisX);
 
-        return $position_y.$position_x;
+        if ($position_y === false || $position_x === false) {
+            return false;
+        }
+
+
+        $coordsInfo = array(
+            'coord_y'    => $coord_y,
+            'coord_x'    => $coord_x,
+            'position_y' => $position_y,
+            'position_x' => $position_x
+        );
+
+        return $coordsInfo;
     }
 
-
-    public static function ships_check($ships) {
+    /**
+     * Checks if ships are set correctly
+     *
+     * Validates coordinates of all ships' masts, checks the number, sizes and shapes of the ships, and potential edge connections between them.
+     *
+     * @param array $ships Ships set by the player (Example: array("A1", "B4", "J10", ...))
+     *
+     * @return string Two indexes (Y and X) concatenated
+     */
+    public static function checkShips($ships)
+    {
+        // converts all coordinates to indexes and sorts them for more efficient validation
         $ships_array = array_map("self::_toIndex", $ships);
         sort($ships_array);
 
+        // required number of masts
         $ships_length = 20;
+        // sizes of ships to be count
         $ships_types  = array(1 => 0, 2 => 0, 3 => 0, 4 => 0);
+        // B3 (index 12), going 2 down and 3 left is D6 (index 35), so 12 + (2 * 10) + (3 * 1) = 35
         $direction_multipliers = array(1, 10);
 
-        if( count($ships_array) != $ships_length ) {
+        // if the number of masts is correct
+        if (count($ships_array) != $ships_length) {
             return false;
         }
 
 
         // check if no edge connection
-        foreach( $ships_array as $key => $value) {
-            if( $value[0] == 9 ) {
+        foreach ($ships_array as $key => $index) {
+            if ($index[0] == 9) {
                 continue;
             }
 
-            $upper_right_corner = ($value[1] > 0) && (in_array($value + 9, $ships_array));
-            $lower_right_corner = ($value[1] < 9) && (in_array($value + 11, $ships_array));
+            // Enough to check one side corners, because I check all masts.
+            // Checking right is more efficient because masts are sorted from the top left corner
+            // B3 (index 12), upper right corner is A4 (index 03), so 12 - 3 = 9 - second digit 0 is first row, so no upper corner
+            $upper_right_corner = ($index[1] > 0) && (in_array($index + 9, $ships_array));
+            // B3 (index 12), lower right corner is C4 (index 23), so 23 - 12 = 11 - second digit 9 is last row, so no lower corner
+            $lower_right_corner = ($index[1] < 9) && (in_array($index + 11, $ships_array));
 
-            if( $upper_right_corner || $lower_right_corner ) {
+            if ($upper_right_corner || $lower_right_corner) {
                 return false;
             }
         }
@@ -616,81 +912,89 @@ class Battleships {
         $masts = array();
 
         // check if there are the right types of ships
-        foreach( $ships_array as $key => $value) {
+        foreach ($ships_array as $key => $index) {
             // we ignore masts which have already been marked as a part of a ship
-            if( array_key_exists($value, $masts) ) {
+            if (array_key_exists($index, $masts)) {
                 continue;
             }
 
-            foreach( $direction_multipliers as $k => $v ) {
-                $border_index    = $k == 1 ? 0 : 1;
-                $border_distance = $value[$border_index];
+            foreach ($direction_multipliers as $k => $multiplier) {
+                $axis_index   = $k == 1 ? 0 : 1;
+                $board_offset = $index[$axis_index];
 
-                $type = 1;
-                // battleground border
-                while( $border_distance + $type <= 9 ) {
-                    $index = sprintf("%02s", $value + ($type * $v));
+                $ship_type = 1;
+                // check for masts until the battleground border is reached
+                while ($board_offset + $ship_type <= 9) {
+                    $check_index = sprintf("%02s", $index + ($ship_type * $multiplier));
 
                     // no more masts
-                    if( !in_array($index, $ships_array) ) {
+                    if (!in_array($check_index, $ships_array)) {
                         break;
                     }
 
-                    $masts[$index] = true;
+                    // mark the mast as already checked
+                    $masts[$check_index] = true;
 
                     // ship is too long
-                    if( ++$type > 4 ) {
+                    if (++$ship_type > 4) {
                         return false;
                     }
                 }
 
-                // if not last direction check and only one (otherwise in both direction at least 1 mast would be found)
-                if( ($type == 1) && ($k + 1 != count($direction_multipliers)) ) {
+                // if not masts found and more directions to check
+                if (($ship_type == 1) && ($k + 1 != count($direction_multipliers))) {
                     continue;
                 }
 
-                break; // either $k > 1 (so ship found) or last loop
+                break; // either all (both) directions checked or the ship is found
             }
 
-            $ships_types[$type]++;
+            $ships_types[$ship_type]++;
         }
 
-        // strange way to check if ships_types == {1:4, 2:3, 3:2, 4:1}
-        foreach( $ships_types as $key => $value) {
-            if( $key + $value != 5 ) {
-                return false;
-            }
+        // whether the number of different ship types is correct
+        $diff = array_diff_assoc($ships_types, array(1 => 4, 2 => 3, 3 => 2, 4 => 1));
+        if ( !empty($diff) ) {
+            return false;
         }
 
         return true;
     }
 
+    /**
+     * Creates battleground HTML
+     *
+     * Return HTML for the 10x10 battleground board (div board class and divs in it) with A B C / 1 2 3 labels for axis.
+     *
+     * @return string Board HTML
+     */
+    public static function createBoard()
+    {
+        $board = "<div class='board'>\n";
 
-    public static function board_create() {
-        $board  = "<div class='board'>\n";
-
-        for( $i=0; $i < 11; $i++ ) {
+        // 11 rows (first row for X axis labels)
+        for ($i = 0; $i < 11; $i++) {
             $board .= "  <div>\n";
 
-            for( $j=0; $j < 11; $j++ ) {
-                if( $i == 0 && $j > 0 ) {
-                    $text = self::$axis_y[($j - 1)];
+            // 11 divs/column in each row (first column for Y axis labels)
+            for ($j = 0; $j < 11; $j++) {
+                if ($i == 0 && $j > 0) {
+                    $text = self::$_axisY[($j - 1)];
                 }
-                else if( $j == 0 && $i > 0 ) {
-                    $text = self::$axis_x[($i - 1)];
+                else if ($j == 0 && $i > 0) {
+                    $text = self::$_axisX[($i - 1)];
                 }
                 else {
                     $text = "";
                 }
 
-                $board .= "    <div>$text</div>\n";
+                $board .= "    <div>" . $text . "</div>\n";
             }
 
             $board .= "  </div>\n";
         }
 
         $board .= "</div>";
-
 
         return $board;
     }

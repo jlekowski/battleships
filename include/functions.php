@@ -10,24 +10,27 @@
  *
  */
 
-function utc_time() {
+function utc_time()
+{
     return time() - date("Z");
 }
 
-function is_root_dir() {
+function is_root_dir()
+{
     $urlInfo     = parse_url($_SERVER['SCRIPT_URI']);
     $urlPathInfo = pathinfo($urlInfo['path']);
 
     return $urlPathInfo['dirname'] == "/";
 }
 
-function get_direct_sqlite_url() {
+function get_direct_sqlite_url()
+{
     $urlInfo     = parse_url($_SERVER['SCRIPT_URI']);
     $urlPathInfo = pathinfo($urlInfo['path']);
 
-    $dirInfo = explode('/', $urlPathInfo['dirname']);
+    $dirInfo = explode("/", $urlPathInfo['dirname']);
     $last_index = count($dirInfo) - 1;
-    if( ($urlPathInfo['basename'] == $urlPathInfo['basename']) && !array_key_exists('extension', $urlPathInfo) ) {
+    if (($urlPathInfo['basename'] == $urlPathInfo['basename']) && !array_key_exists('extension', $urlPathInfo)) {
         $last_index += 1;
     }
     $dirInfo[$last_index] = "db";
