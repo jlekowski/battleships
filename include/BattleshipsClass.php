@@ -15,6 +15,7 @@
  * @todo       last shot and whose turn it is
  * @todo       code formatting change
  * @todo       htmlentities before data insert not necessarily the best idea
+ * @todo       generate hash, edit it in DB and redirect to the new (initGame)
  *
  *
  */
@@ -29,6 +30,15 @@ class Battleships
      * @var object
      */
     private $_DB;
+
+    /**
+     * PDO Statement Object
+     *
+     * Example: object(PDOStatement)#3 (1) {'queryString' => "SELECT ..."}
+     *
+     * @var object
+     */
+    private $_sth;
 
     /**
      * Error variable
@@ -143,6 +153,85 @@ class Battleships
     }
 
     /**
+     * Sets query using PDO prepare
+     *
+     * @param string $query SQL Query prepare
+     *
+     * @return bool Whether an error in PDO prepare ocurred
+     */
+    protected function _prepare($query)
+    {
+        $this->_sth = $this->_DB->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));
+
+        if ($this->_sth === false) {
+            $this->_setDbError();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Executes query using PDO execute
+     *
+     * @param array $values Values for SQL set in PDO prepare
+     *
+     * @return array|false SQL Query result
+     */
+    protected function _execute($values)
+    {
+        $result = $this->_sth->execute($values);
+
+        if ($result === false) {
+            $this->_setDbError();
+            return false;
+        }
+
+        return $this->_sth->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Executes query with array values (for IN clause)
+     *
+     * Allows to set array values for IN clause, e.g. WHERE id = :id | array(':id' => array(1,5,6))
+     *
+     * @param string $query SQL Query prepare
+     * @param array $parameters Values for SQL set in PDO prepare
+     *
+     * @return array|false SQL Query result
+     */
+    protected function _fQuery($query, $parameters)
+    {
+        // if array is multidimensional, i.e. an array is used for IN clause - otherwise simple prepare and execute in one method
+        if (count($parameters) != count($parameters, COUNT_RECURSIVE)) {
+            foreach ($parameters as $key => $value) {
+                // values must be reorganised only for array values
+                if (!is_array($value)) {
+                    continue;
+                }
+                // for array values named marker must be used, i.e. :id, :event, ...
+                if (is_integer($key)) {
+                    $this->_setError("DB query error - array PDO values must be set in assiociative array");
+                    return false;
+                }
+
+                $markers = array();
+                foreach ($value as $k => $v) {
+                    $markers[] = $key.$k; // e.g. ':id0', ':id1', ...
+                    $parameters[ $key.$k ] = $v;
+                }
+
+                $query = str_replace($key, implode(",", $markers), $query);
+                unset($parameters[$key]); // to replace :id with :id0, :id1, ...
+            }
+        }
+
+        $this->_prepare($query);
+
+        return $this->_execute($parameters);
+    }
+
+    /**
      * Creates DB tables (CREATE TABLE) - games, events
      *
      * @return void
@@ -182,23 +271,23 @@ class Battleships
         }
     }
 
-    /**
-     * Escape the text before inserting it to SQL Query
-     *
-     * Runs native escaping function, converts html special chars and removes html tags
-     *
-     * @param string $text Text to be escaped
-     * @param bool $esc_quotes Whether to escape quotes or not
-     *
-     * @return string Escaped text
-     */
-    private function _escapeString($text, $esc_quotes = true)
-    {
-        // don't escape serialized string (" -> &quot;)
-        $flags = $esc_quotes ? ENT_COMPAT : ENT_NOQUOTES;
-
-        return $this->_DB->quote( htmlentities(strip_tags($text), $flags) );
-    }
+//    /**
+//     * Escape the text before inserting it to SQL Query
+//     *
+//     * Runs native escaping function, converts html special chars and removes html tags
+//     *
+//     * @param string $text Text to be escaped
+//     * @param bool $esc_quotes Whether to escape quotes or not
+//     *
+//     * @return string Escaped text
+//     */
+//    private function _escapeString($text, $esc_quotes = true)
+//    {
+//        // don't escape serialized string (" -> &quot;)
+//        $flags = $esc_quotes ? ENT_COMPAT : ENT_NOQUOTES;
+//
+//        return $this->_DB->quote( htmlentities(strip_tags($text), $flags) );
+//    }
 
     /**
      * Initiates a game
@@ -250,7 +339,6 @@ class Battleships
         // for now there's no sense to add join_game event for player 1
         if ($_SESSION['player_number'] == 2 && !$_SESSION['player_joined']) {
             $this->joinGame();
-            /* @todo: generate hash, edit it in DB and redirect to the new */
         }
 
         return true;
@@ -267,20 +355,11 @@ class Battleships
      */
     private function _getGameByHash($hash)
     {
-        $esc_hash = $this->_escapeString($hash);
-
         // what when 2 hashes found?
-        $query = "
-            SELECT
-                *,
-                CASE WHEN player1_hash = " . $esc_hash . " THEN 1 ELSE 2 END AS player_number
-            FROM
-                games
-            WHERE
-                   player1_hash = " . $esc_hash . "
-                OR player2_hash = " . $esc_hash . "
-        ";
-        $result = $this->_query($query);
+        $query = "SELECT *, CASE WHEN player1_hash = :hash THEN 1 ELSE 2 END AS player_number
+                  FROM games
+                  WHERE player1_hash = :hash OR player2_hash = :hash";
+        $result = $this->_fQuery($query, array(':hash' => $hash));
 
         if ($result === false) {
             return false;
@@ -304,6 +383,7 @@ class Battleships
         $hash     = hash("md5", session_id() . microtime(true) . rand());
         $temphash = hash("md5", $hash . rand());
 
+        // array with values to be inserted to the table
         $game = array(
             'player1_hash'  => $hash,
             'player1_name'  => "Player 1",
@@ -311,38 +391,18 @@ class Battleships
             'player2_hash'  => $temphash,
             'player2_name'  => "Player 2",
             'player2_ships' => "",
-            'timestamp'     => utc_time(),
-            'player_number' => 1
+            'timestamp'     => utc_time()
         );
 
-        // uglyyyy
-        $query = "
-            INSERT INTO games (
-                player1_hash,
-                player1_name,
-                player1_ships,
-                player2_hash,
-                player2_name,
-                player2_ships,
-                timestamp
-            )
-            VALUES (
-                '" . $game['player1_hash']  . "',
-                '" . $game['player1_name']  . "',
-                '" . $game['player1_ships'] . "',
-                '" . $game['player2_hash']  . "',
-                '" . $game['player2_name']  . "',
-                '" . $game['player2_ships'] . "',
-                 " . $game['timestamp']     . "
-            )
-        ";
-
-        $result = $this->_query($query);
+        $query = "INSERT INTO games (player1_hash, player1_name, player1_ships, player2_hash, player2_name, player2_ships, timestamp)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $result = $this->_fQuery($query, array_values($game));
 
         if ($result === false) {
             return false;
         }
 
+        $game['player_number'] = 1; // player who starts is always No. 1
         $game['id'] = $this->_DB->lastInsertId();
 
         return $game;
@@ -357,26 +417,15 @@ class Battleships
      */
     public function updateName($player_name)
     {
-        $esc_player_name = $this->_escapeString($player_name);
-
-        $query = "
-            UPDATE
-                games
-            SET
-                player" . $_SESSION['player_number'] . "_name = " . $esc_player_name . "
-            WHERE
-                id = " . $_SESSION['game_id']
-        ;
-
-        $result = $this->_query($query);
+        $query = sprintf("UPDATE games SET player%d_name = ? WHERE id = ?", $_SESSION['player_number']);
+        $result = $this->_fQuery($query, array($player_name, $_SESSION['game_id']));
 
         if ($result === false) {
             return false;
         }
 
-        // removing first and last '
-        $_SESSION['player_name'] = substr($esc_player_name, 1, strlen($esc_player_name) - 2);
-        $this->_addEvent('name_update', $_SESSION['player_name']);
+        $this->_addEvent('name_update', $player_name);
+        $_SESSION['player_name'] = $player_name;
 
         return true;
     }
@@ -391,26 +440,14 @@ class Battleships
      */
     public function getUpdates()
     {
-        $updates = array();
-
-        $query = "
-            SELECT
-                *
-            FROM
-                events
-            WHERE
-                    id      > " . $_SESSION['last_event'] . "
-                AND game_id = " . $_SESSION['game_id'] . "
-                AND player  = " . $_SESSION['other_number'] . "
-        ";
-
-        $result = $this->_query($query);
+        $query = "SELECT * FROM events WHERE id > ? AND game_id = ? AND player = ?";
+        $result = $this->_fQuery($query, array($_SESSION['last_event'], $_SESSION['game_id'], $_SESSION['other_number']));
 
         if ($result === false) {
             return false;
         }
 
-
+        $updates = array();
         foreach ($result as $value) {
             switch ($value['event_type']) {
                 case "name_update":
@@ -463,28 +500,8 @@ class Battleships
      */
     private function _addEvent($event_type, $event_value = 1)
     {
-        $esc_event_type  = $this->_escapeString($event_type, false);
-        $esc_event_value = $this->_escapeString($event_value, false);
-
-        $query = "
-            INSERT INTO
-                events (
-                    game_id,
-                    player,
-                    event_type,
-                    event_value,
-                    timestamp
-                )
-            VALUES (
-                " . $_SESSION['game_id']       . ",
-                " . $_SESSION['player_number'] . ",
-                " . $esc_event_type            . ",
-                " . $esc_event_value           . ",
-                " . utc_time()                 . "
-            )
-        ";
-
-        $result = $this->_query($query);
+        $query = "INSERT INTO events (game_id, player, event_type, event_value, timestamp) VALUES (?, ?, ?, ?, ?)";
+        $result = $this->_fQuery($query, array($_SESSION['game_id'], $_SESSION['player_number'], $event_type, $event_value, utc_time()));
 
         if ($result === false) {
             return false;
@@ -504,7 +521,7 @@ class Battleships
      */
     public function startGame($ships)
     {
-        if (!is_array($ships) || !empty($_SESSION['player_ships'])) {
+        if (!self::checkShips($ships) || !empty($_SESSION['player_ships'])) {
             return false;
         }
 
@@ -516,24 +533,14 @@ class Battleships
             }
         }
 
-
-        $query = "
-            UPDATE
-                games
-            SET
-                player" . $_SESSION['player_number'] . "_ships = '" . serialize($ships) . "'
-            WHERE
-                id = " . $_SESSION['game_id']
-        ;
-
-        $result = $this->_query($query);
+        $query = sprintf("UPDATE games SET player%d_ships = ? WHERE id = ?", $_SESSION['player_number']);
+        $result = $this->_fQuery($query, array(serialize($ships), $_SESSION['game_id']));
 
         if ($result === false) {
             return false;
         }
 
         $this->_addEvent("start_game", serialize($ships));
-
         $_SESSION['player_ships'] = $ships;
 
         return true;
@@ -682,32 +689,22 @@ class Battleships
      * If $raw no specified, groups results by event type and player number.
      *
      * @param int $game_id Id of the game
-     * @param string|array|null $event_type Types of events to be returned (all if not/null provided)
+     * @param string|array $event_type Types of events to be returned (all if not/null provided)
      * @param bool $raw Whether to return a query result or group the result by even_type and player_number
      *
      * @return array|false Events for the game (Example: array('chat' => array(1 => array(0 => "Hi!", 2 => ...), 'shot' => array(1 => array(0 => "A1", ...), ...)
      */
-    private function _getEvents($game_id, $event_type = null, $raw = false)
+    private function _getEvents($game_id, $event_type, $raw = false)
     {
-        $events = array();
-
-        $query = "
-            SELECT
-                *
-            FROM
-                events
-            WHERE
-                game_id = " . $game_id . "
-                " . (is_null($event_type) ? "" : "AND event_type IN('".implode("','", (array)$event_type)."')")
-        ;
-
-        $result = $this->_query($query);
+        $query = "SELECT * FROM events WHERE game_id = ? AND event_type IN (:event_types)";
+        $result = $this->_fQuery($query, array($game_id, ':event_types' => $event_type));
 
         if ($raw || $result === false) {
             return $result;
         }
 
         // group the response by event type and player number
+        $events = array();
         foreach ($result as $value) {
             $events[ $value['event_type'] ][ $value['player'] ][] = $value['event_value'];
         }
@@ -727,19 +724,8 @@ class Battleships
      */
     private function _getLastEventId($game_id, $player)
     {
-        $query = "
-            SELECT
-                MAX(id) AS id
-            FROM
-                events
-            WHERE
-                    game_id = " . $game_id . "
-                AND player  = " . $player . "
-            GROUP BY
-                game_id
-        ";
-
-        $result = $this->_query($query);
+        $query = "SELECT MAX(id) AS id FROM events WHERE game_id = ? AND player = ? GROUP BY game_id";
+        $result = $this->_fQuery($query, array($game_id, $player));
 
         if ($result === false) {
             return false;
@@ -874,6 +860,10 @@ class Battleships
      */
     public static function checkShips($ships)
     {
+        if (!is_array($ships)) {
+            return false;
+        }
+
         // converts all coordinates to indexes and sorts them for more efficient validation
         $ships_array = array_map("self::_toIndex", $ships);
         sort($ships_array);

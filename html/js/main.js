@@ -11,6 +11,9 @@
  *
  */
 
+// log events, updates managements
+var debug = true;
+
 // battle boards axix Y legend
 var axis_y = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 // battle boards axix X legend
@@ -22,13 +25,11 @@ var game_started = false;
 // prevents shooting (when game not started or other player's turn)
 var shot_prevent = true;
 // true - updates are requested (updating ON); false - you can start requesting updates (updating OFF);
-var update_execute = false;
+var update_execute = !debug;
 // inteval between update calls
 var update_interval = 3000;
 // prevents focusing on chatbox (usually when pressing ctrl/alt + chatbox_key)
 var focus_prevent = false;
-// log events, updates managements
-var debug = true;
 // updates AJAX object
 var updateXHR;
 // battle boards
@@ -498,12 +499,10 @@ function get_battle() {
 }
 
 function chat_append(text, name, time) {
-    var chat_row =
-          "<p>"
-        + "<span class='time'>[" + time + "]</span> "
-        + "<span class='name'>" + name  + "</span>: "
-        + text
-        + "</p>";
+    var $time = $("<span>").addClass("time").text("[" + time + "] ");
+    var $name = $("<span>").addClass("name").text(name + ": ");
+    var $text = $("<span>").text(text);
+    var $chat_row = $("<p>").append($time).append($name).append($text);
 
     var $chats = $("#chatbox div.chats");
 
@@ -519,10 +518,10 @@ function chat_append(text, name, time) {
     }
 
     if( (l == 0) || (i == l - 1) ) {
-        $chats.append(chat_row);
+        $chats.append($chat_row);
     }
     else {
-        $chats.children("p").eq(i+1).before(chat_row);
+        $chats.children("p").eq(i+1).before($chat_row);
     }
 
     $chats.clearQueue().animate({
@@ -530,7 +529,7 @@ function chat_append(text, name, time) {
     }, 'slow');
 }
 
-function game_start(battle_started) {
+function game_start() {
     game_started = true;
     $("#start").prop('disabled', true);
 }
@@ -644,7 +643,7 @@ function custom_log( log ) {
 
     var log_me = ($.type(log) != "object") ? log : ($.browser.mozilla ? log.toSource() : log.error + ' | ' + log.success + ' | ' + log.time);
 
-    $("div.log").clearQueue().append("<p>" + log_me + "</p>").animate({
+    $("div.log").clearQueue().append( $("<p>").text(log_me) ).animate({
         scrollTop: $("div.log").prop("scrollHeight")
     }, 'slow');
 

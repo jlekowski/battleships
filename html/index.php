@@ -80,13 +80,13 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
     </div>
     <div class="board_container">
         <div class="board_menu">
-            <input type="text" value="<?=$_SESSION['player_name']?>" /><span id="name_update"><?=$_SESSION['player_name']?></span>
+            <input type="text" value="<?=$_SESSION['player_name']?>" /><span id="name_update"><?=escape_string($_SESSION['player_name'])?></span>
         </div>
 <?=Battleships::createBoard()?>
     </div>
     <div class="board_container">
         <div class="board_menu">
-            <span><?=$_SESSION['other_name']?></span>
+            <span><?=escape_string($_SESSION['other_name'])?></span>
         </div>
 <?=Battleships::createBoard()?>
     </div>

@@ -46,7 +46,7 @@ switch ($_GET['action']) {
 
     // when player's name is updated
     case 'name_update':
-        if ($oBattleships->updateName($_GET['player_name'])) {
+        if (array_key_exists('player_name', $_GET) && $oBattleships->updateName($_GET['player_name'])) {
             $return['success'] = true;
         }
         else {
@@ -57,7 +57,7 @@ switch ($_GET['action']) {
 
     // when a player press "Start" after setting ships
     case 'start_game':
-        if (array_key_exists("ships", $_GET) && Battleships::checkShips($_GET['ships']) && $oBattleships->startGame($_GET['ships'])) {
+        if (array_key_exists("ships", $_GET) && $oBattleships->startGame($_GET['ships'])) {
             $return['success'] = true;
         }
         else {

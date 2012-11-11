@@ -15,6 +15,10 @@ function utc_time()
     return time() - date("Z");
 }
 
+function escape_string($text) {
+    return htmlentities($text, ENT_COMPAT);
+}
+
 function is_root_dir()
 {
     $urlInfo     = parse_url($_SERVER['SCRIPT_URI']);
