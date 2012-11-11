@@ -4,7 +4,7 @@
  * Game interface
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.1b
+ * @version    0.2b
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
