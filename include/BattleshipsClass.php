@@ -586,15 +586,19 @@ class Battleships
      * Checks if all other masts has been hit
      *
      * @param string $coords Shot coordinates (Example: "A1", "B4", "J10", ...)
+     * @param string $shooter Whose shot is about to be checked (player|other)
      * @param int $direction Direction which is checked for ship's masts
      *
      * @return bool Whether the ship is sunk after this shot or not
      */
-    private static function _checkSunk($coords, $direction = null)
+    private static function _checkSunk($coords, $shooter = "player", $direction = null)
     {
         $coordsInfo = self::_coordsInfo($coords);
         if ($coordsInfo === false) {
-            $this->_setError("Coordinates are incorrect (" . $coords . ")");
+            return false;
+        }
+
+        if (!in_array($shooter, array("player", "other"))) {
             return false;
         }
 
@@ -615,12 +619,14 @@ class Battleships
                 continue;
             }
 
-            $ship = array_search($value, $_SESSION['other_ships']);
-            $shot = array_search($value, $_SESSION['player_shots']);
+            $ships  = $shooter == "player" ? $_SESSION['other_ships']  : $_SESSION['player_ships'];
+            $shoots = $shooter == "player" ? $_SESSION['player_shots'] : $_SESSION['other_shots'];
+            $ship = array_search($value, $ships);
+            $shot = array_search($value, $shoots);
 
             // if there's a mast there and it's been hit, check this direction for more masts
             if ($ship !== false && $shot !== false) {
-                $check_sunk = self::_checkSunk($value, $key);
+                $check_sunk = self::_checkSunk($value, $shooter, $key);
             }
             // if mast hasn't been hit, the the ship can't be sunk
             elseif ($ship !== false) {
@@ -756,7 +762,7 @@ class Battleships
                 if (array_search($value, $_SESSION[ $prefix[1].'_ships' ]) === false) {
                     $shot = "miss";
                 }
-                else if (self::_checkSunk($value)) {
+                else if (self::_checkSunk($value, $prefix[0])) {
                     $shot = "sunk";
                 }
                 else {
