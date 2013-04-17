@@ -4,7 +4,7 @@
  * Webservice for game actions management
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.2.1b
+ * @version    0.2.2b
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
