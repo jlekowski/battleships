@@ -15,8 +15,9 @@ function utc_time()
     return time() - date("Z");
 }
 
-function escape_string($text) {
-    return htmlentities($text, ENT_COMPAT);
+function escape_string($text)
+{
+    return htmlentities($text, ENT_COMPAT, "UTF-8");
 }
 
 function is_root_dir()

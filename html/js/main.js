@@ -25,7 +25,7 @@ var game_started = false;
 // prevents shooting (when game not started or other player's turn)
 var shot_prevent = true;
 // true - updates are requested (updating ON); false - you can start requesting updates (updating OFF);
-var update_execute = !debug;
+var update_execute = false;
 // inteval between update calls
 var update_interval = 3000;
 // prevents focusing on chatbox (usually when pressing ctrl/alt + chatbox_key)
@@ -57,10 +57,6 @@ $(document).ready( function() {
     $battleground = $("div:gt(0) div:not(:first-child)", "div.board");
     $chatbox      = $("#chatbox :text");
 
-    if( debug === true ) {
-        $("#update, div.log").show();
-    }
-
     // parse key range to array
     parse_chatbox_keys();
 
@@ -80,11 +76,6 @@ $(document).ready( function() {
         focus_prevent = false;
     });
 
-    // first call to load ships, battle and chats
-    get_battle();
-
-    // start AJAX calls for updates
-    $("#update").triggerHandler('click');
 
     // board handling
     $battleground.click( function() {
@@ -184,7 +175,6 @@ $(document).ready( function() {
         }
     });
 
-
     // starts new game
     $("#new_game").click( function() {
         if( confirm("Are you sure you want to quit the current game?") ) {
@@ -232,6 +222,17 @@ $(document).ready( function() {
        var index = Math.floor(Math.random() * $empty_fields.length);
        $empty_fields.eq(index).click();
     });
+
+
+    if( debug === true ) {
+        $("#update, div.log").show();
+    }
+
+    // first call to load ships, battle and chats
+    get_battle();
+
+    // start AJAX calls for updates
+    $("#update").triggerHandler('click');
 });
 
 
@@ -619,7 +620,7 @@ function ships_check($ships) {
 }
 
 function parse_chatbox_keys() {
-    var temp      = chatbox_keys.split(",");
+    var temp = chatbox_keys.split(",");
     chatbox_keys = [];
 
     for( i in temp ) {
