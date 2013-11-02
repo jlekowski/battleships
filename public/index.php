@@ -4,7 +4,7 @@
  * Game interface
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.2.2b
+ * @version    CLI test
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
@@ -13,12 +13,13 @@
  *
  */
 
-require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "config" . DIRECTORY_SEPARATOR . "config.php";;
+require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "config" . DIRECTORY_SEPARATOR . "config.php";
 require_once INCLUDE_PATH . "functions.php";
-require_once INCLUDE_PATH . "BattleshipsClass.php";
 
 // initiate Battleships object
-$oBattleships = new Battleships();
+$oDB = new DB(DB_TYPE);
+$oBattleshipsGame = new BattleshipsGame();
+$oBattleships = new Battleships($oBattleshipsGame, $oDB);
 $error = $oBattleships->getError();
 
 if ($error !== null) {
@@ -35,7 +36,7 @@ if (!array_key_exists('hash', $_GET)) {
         exit;
     }
 
-    header("Location: " . $_SERVER['SCRIPT_URI'] . "?hash=" . $_SESSION['player_hash'], 303);
+    header("Location: " . $_SERVER['SCRIPT_URI'] . "?hash=" . $oBattleships->oBattleshipsGame->getPlayerHash(), 303);
     exit;
 }
 
@@ -54,25 +55,27 @@ if ($game_initiate === false) {
     <title>Battleships</title>
     <link href="css/main.css" rel="stylesheet" />
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+    <script src="js/jquery.xml2json.js"></script>
+    <script src="js/jquery.soap.js"></script>
     <script src="js/main.js"></script>
 </head>
 <body>
 <?php
 if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
-    $direct_sqlite_file = get_direct_sqlite_url();
+    $direct_sqlite_file = get_sqlite_url();
 ?>
     <div class="warning" style="width: 968px;">
         Game is not open in root directory and SQLITE_FILE has default set "<?=SQLITE_FILE?>" and
         is available directly!<br />
         <a href="<?=$direct_sqlite_file?>"><?=$direct_sqlite_file?></a><br />
-        Set root URL for html directory or change SQLITE_FILE in config.php to a random one <br />
-        (e.g. "<?=hash("sha256", $_SESSION['player_hash'] . microtime(true) . rand())?>.sqlite") and delete current file.
+        Set root URL for public directory or change SQLITE_FILE in config.php to a random one <br />
+        (e.g. "<?=hash("sha256", uniqid(mt_rand(), true))?>.sqlite") and delete current file.
     </div>
 <?php
 }
 ?>
     <div class="menu">
-        Game No. <?=$_SESSION['game_id']?>
+        Game No. <?=$oBattleships->oBattleshipsGame->getIdGames()?>
         <button id="start">Start</button>
         <button id="update">Updates [OFF]</button>
         <button id="new_game">New Game</button>
@@ -80,13 +83,14 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
     </div>
     <div class="board_container">
         <div class="board_menu">
-            <input type="text" value="<?=$_SESSION['player_name']?>" /><span id="name_update"><?=escape_string($_SESSION['player_name'])?></span>
+            <input type="text" value="<?=$oBattleships->oBattleshipsGame->getPlayerName()?>" />
+            <span id="name_update"><?=escape_string($oBattleships->oBattleshipsGame->getPlayerName())?></span>
         </div>
 <?=Battleships::createBoard()?>
     </div>
     <div class="board_container">
         <div class="board_menu">
-            <span><?=escape_string($_SESSION['other_name'])?></span>
+            <span><?=escape_string($oBattleships->oBattleshipsGame->getOtherName())?></span>
         </div>
 <?=Battleships::createBoard()?>
     </div>
@@ -94,8 +98,9 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
 
     <p id="game_link">
 <?php
-    if ($_SESSION['player_number'] == 1 && $_SESSION['other_joined'] === false) {
-        echo "Temporary link to the game for the oponent: <span>" . $_SERVER['SCRIPT_URI'] . "?hash=" . $_SESSION['other_hash'] . "</span>";
+    if ($oBattleships->oBattleshipsGame->getPlayerNumber() == 1 && $oBattleships->oBattleshipsGame->getOtherJoined() === false) {
+        echo "Temporary link to the game for the oponent: <span>" . $_SERVER['SCRIPT_URI']
+            . "?hash=" . $oBattleships->oBattleshipsGame->getOtherHash() . "</span>";
     }
 ?>
     </p>
@@ -107,5 +112,7 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
             <input type="text" />
         </div>
     </div>
+
+    <input type="hidden" id="hash" value="<?=$oBattleships->oBattleshipsGame->getPlayerHash()?>" />
 </body>
 </html>

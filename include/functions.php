@@ -4,7 +4,7 @@
  * General functions
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.2.2b
+ * @version    CLI test
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
@@ -28,7 +28,7 @@ function is_root_dir()
     return $urlPathInfo['dirname'] == "/";
 }
 
-function get_direct_sqlite_url()
+function get_sqlite_url()
 {
     $urlInfo     = parse_url($_SERVER['SCRIPT_URI']);
     $urlPathInfo = pathinfo($urlInfo['path']);
@@ -44,5 +44,3 @@ function get_direct_sqlite_url()
 
     return $direct_sqlite_url;
 }
-
-?>

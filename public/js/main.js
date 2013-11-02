@@ -3,7 +3,7 @@
  * Interface interaction
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.2.2b
+ * @version    CLI test
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
@@ -30,6 +30,8 @@ var update_execute = false;
 var update_interval = 3000;
 // prevents focusing on chatbox (usually when pressing ctrl/alt + chatbox_key)
 var focus_prevent = false;
+// id of the last event retrieved from API
+var lastIdEvents = 0;
 // updates AJAX object
 var updateXHR;
 // battle boards
@@ -40,16 +42,18 @@ var $chatbox;
 var last_timeout;
 
 
-// default settings for AJAX calls
-$.ajaxSetup({
-    url:        'webservice.php',
-    dataType:   'json',
-    cache:      false,
-    beforeSend: function(jqXHR, settings) {
-        custom_log( settings.url.split("?")[1].split("&") );
+// default settings for SOAP calls
+$.soap({
+    url: 'SOAP/server.php',
+    appendMethodToURL: false,
+    request: function (soapRequest) {
+        custom_log(soapRequest.toString());
+//        $(soapRequest.toString()).find(':first').find(':first').children().each(function() {
+//            console.log( $(this).prop('tagName').toLowerCase() + ' | ' + $(this).text()  );
+//        });
     },
-    error:      function(jqXHR, textStatus, errorThrown) {
-        custom_log(jqXHR.responseText);
+    error: function (soapResponse) {
+        custom_log(soapResponse);
     }
 });
 
@@ -104,16 +108,21 @@ $(document).ready( function() {
             return false;
         }
 
-
-        var ships_array = $ships.map( function() {
+        var shipsString = $ships.map( function() {
                               return get_coords(this).join('');
-                          }).toArray();
+                          }).toArray().join(",");
 
-        $.ajax({
-            data:      {'action': "start_game", 'ships': ships_array},
-            success:   function(result) {
-                custom_log( result );
-                if( result.error !== false ) {
+        $.soap({
+            method: 'startGame',
+            params: {
+                hash: $("#hash").val(),
+                ships: shipsString
+            },
+            success: function (soapResponse) {
+                var result = soap_to_object(soapResponse, "result");
+                custom_log(result);
+
+                if( result !== true ) {
                     return false;
                 }
 
@@ -141,11 +150,17 @@ $(document).ready( function() {
         var $input      = $(this);
         var player_name = $input.val();
 
-        $.ajax({
-            data:      {'action': "name_update", 'player_name':  player_name},
-            success:   function(result) {
-                custom_log( result );
-                if( result.error !== false ) {
+        $.soap({
+            method: 'updateName',
+            params: {
+                hash: $("#hash").val(),
+                playerName: $('<span>').text(player_name).html()
+            },
+            success: function (soapResponse) {
+                var result = soap_to_object(soapResponse, "result");
+                custom_log(result);
+
+                if( result !== true ) {
                     return false;
                 }
 
@@ -197,19 +212,23 @@ $(document).ready( function() {
 
         $chatbox.prop('disabled', true);
 
-        $.ajax({
-            data:      {'action': "chat", 'text':  text},
-            success:   function(result) {
-                custom_log( result );
-                if( result.error !== false ) {
+        $.soap({
+            method: 'addChat',
+            params: {
+                hash: $("#hash").val(),
+                text: $('<span>').text(text).html()
+            },
+            success: function (soapResponse) {
+                var result = soap_to_object(soapResponse, "result");
+                custom_log(result);
+                $chatbox.prop('disabled', false);
+
+                if( result <= 0 ) {
                     return false;
                 }
 
-                chat_append(text, $("#name_update").text(), result.success);
+                chat_append(text, $("#name_update").text(), result);
                 $chatbox.val("");
-            },
-            complete:  function(jqXHR, textStatus) {
-                $chatbox.prop('disabled', false);
             }
         });
     });
@@ -229,21 +248,21 @@ $(document).ready( function() {
     }
 
     // first call to load ships, battle and chats
-    get_battle();
-
-    // start AJAX calls for updates
-    $("#update").triggerHandler('click');
+    get_battle(function () {
+        // start AJAX calls for updates
+        $("#update").triggerHandler('click');
+    });
 });
 
 
 function shot(element) {
     if( !game_started ) {
-        alert("You can't shoot at the moment - game is not started")
+        alert("You can't shoot at the moment - game is not started");
         return false;
     }
 
     if( shot_prevent ) {
-        alert("You can't shoot at the moment - othe player has not started or it's not your turn!")
+        alert("You can't shoot at the moment - other player has not started or it's not your turn!");
         return false;
     }
 
@@ -251,25 +270,27 @@ function shot(element) {
 
     shot_prevent = true;
 
-    $.ajax({
-        data:      {'action': "shot", 'coords': coords.join('')},
-        success:   function(result) {
-            custom_log( result );
-            if( result.error !== false ) {
-                return false;
-            }
+    $.soap({
+       method: 'addShot',
+       params: {
+           hash: $("#hash").val(),
+           coords: coords.join('')
+       },
+       success: function (soapResponse) {
+           var result = soap_to_object(soapResponse, "result");
+           custom_log(result);
 
-            if( result.success != "miss" ) {
-                shot_prevent = false;
-            }
+           if( result === "" ) {
+               shot_prevent = false;
+               return false;
+           }
 
-            mark_shot(1, coords, result.success);
-        },
-        complete:  function(jqXHR, textStatus) {
-            if( textStatus != 'success' ) {
-                shot_prevent = false;
-            }
-        }
+           if( result != "miss" ) {
+               shot_prevent = false;
+           }
+
+           mark_shot(1, coords, result);
+       }
     });
 }
 
@@ -398,54 +419,61 @@ function get_updates() {
         return false;
     }
 
-    updateXHR = $.ajax({
-        data:      {'action': "get_updates"},
-        cache:     false,
-        success:   function(result) {
-            custom_log( result );
-            if( result === null || result.error !== false || result.success.length == 0 ) {
+    updateXHR = $.soap({
+        method: 'getUpdates',
+        params: {
+            hash: $("#hash").val(),
+            lastIdEvents: lastIdEvents
+        },
+        success: function (soapResponse) {
+            var result = soap_to_object(soapResponse, "updates");
+            custom_log(result);
+
+            if( update_execute !== false ) {
+                last_timeout = setTimeout("get_updates(true)", update_interval);
+            }
+
+            if( result === null || result === false || result.length == 0 ) {
                 return false;
             }
 
+            for( var key in result ) {
+                var updates = result[key];
+                for( var i in updates ) {
+                    var update = updates[i];
 
-            for( key in result.success ) {
-                switch( result.success[key].action ) {
-                    case 'name_update':
-                        $("div.board_menu:eq(1) span").text(result.success[key].value);
-                        break;
+                    switch( key ) {
+                        case 'name_update':
+                            $("div.board_menu:eq(1) span").text(update);
+                            break;
 
-                    case 'start_game':
-                        shot_prevent = false;
-                        $("div.board:eq(1) div div:not(:first-child)").css('border-right-color', "black");
-                        $("div.board:eq(1) div:not(:first-child) div").css('border-bottom-color', "black");
-                        break;
-
-                    case 'join_game':
-                        $("div.board_menu:eq(1) span").css({'font-weight': "bold"});
-                        $("#game_link").text("");
-                        break;
-
-                    case 'shot':
-                        if( mark_shot(0, result.success[key].value) == "miss" ) {
+                        case 'start_game':
                             shot_prevent = false;
-                        }
-                        break;
+                            $("div.board:eq(1) div div:not(:first-child)").css('border-right-color', "black");
+                            $("div.board:eq(1) div:not(:first-child) div").css('border-bottom-color', "black");
+                            break;
 
-                    case 'chat':
-                        var chat = result.success[key].value;
-                        chat_append(chat.text, $("div.board_menu:eq(1) span").text(), chat.time);
-                        break;
+                        case 'join_game':
+                            $("div.board_menu:eq(1) span").css({'font-weight': "bold"});
+                            $("#game_link").text("");
+                            break;
+
+                        case 'shot':
+                            if( mark_shot(0, update) == "miss" ) {
+                                shot_prevent = false;
+                            }
+                            break;
+
+                        case 'chat':
+                            chat_append(update.text, $("div.board_menu:eq(1) span").text(), update.time);
+                            break;
+
+                        case 'lastIdEvents':
+                            lastIdEvents = update;
+                            break;
+                    }
                 }
             }
-        },
-        complete:  function(jqXHR, textStatus) {
-            if( update_execute === false ) {
-                return false;
-            }
-
-            last_timeout = setTimeout("get_updates(true)", update_interval);
-
-            return true;
         }
     });
 }
@@ -456,47 +484,155 @@ function stop_update() {
     updateXHR.abort();
 }
 
-function get_battle() {
+function get_battle(callback) {
     var date = new Date();
     var timezone_offset = -date.getTimezoneOffset() / 60;
 
-    $.ajax({
-        data:      {'action': "get_battle", 'timezone_offset': timezone_offset},
-        success:   function(result) {
-            custom_log( result );
-            if( result.error !== false ) {
-                return false;
+    $.soap({
+        method: 'getGame',
+        params: {
+            hash: $("#hash").val(),
+            timezoneOffset: timezone_offset
+        },
+        success: function (soapResponse) {
+            var key;
+            var commaSeparated = ["playerShips", "otherShips", "playerShots", "otherShots"];
+
+            var gameData = soap_to_object(soapResponse, "gameData");
+            custom_log(gameData);
+            
+            for (key in commaSeparated) {
+                var value = commaSeparated[key];
+                gameData[value] = gameData[value] ? gameData[value].split(",") : [];
             }
 
-            var battle = result.success.battle;
-            var chats  = result.success.chats;
+            var battle = gameData.battle;
+            var chats  = gameData.chats;
+            lastIdEvents = gameData.lastIdEvents;
 
-            if( battle.player_ships.length > 0 ) {
+            if( gameData.playerShips.length > 0 ) {
                 game_start();
 
-                if( (battle.other_shots !== null) || (battle.player_shots !== null) ) {
+                if(gameData.whoseTurn == gameData.playerNumber) {
                     shot_prevent = false;
                 }
             }
 
-            for( key in battle.player_ships ) {
-                var field = get_field_by_coords(battle.player_ships[key], 0);
+            for( key in gameData.playerShips ) {
+                var field = get_field_by_coords(gameData.playerShips[key], 0);
                 field.addClass("ship");
             }
 
-            for( key in battle.other_shots ) {
-                mark_shot(0, key, battle.other_shots[key]);
+            for( key in battle.playerGround ) {
+                mark_shot(0, key, battle.playerGround[key]);
             }
 
-            for( key in battle.player_shots ) {
-                mark_shot(1, key, battle.player_shots[key]);
+            for( key in battle.otherGround ) {
+                mark_shot(1, key, battle.otherGround[key]);
             }
 
             for( key in chats ) {
                 chat_append(chats[key].text, chats[key].name, chats[key].time);
             }
+
+            if (typeof callback == "function") {
+                callback();
+            }
         }
     });
+}
+
+// TODO: would be better if node_to_object() handled this (double children().length check)
+function soap_to_object(soap, childName) {
+    var response;
+    var $resultNode = $(soap.toXML()).find(childName);
+
+    if ($resultNode.children().length > 0) {
+        response = {};
+        $resultNode.children().each(function() {
+            var key;
+            var value;
+            if (childName == "updates") {
+                key = node_to_object($(this).find('key').get(0));
+                if (key == "chat") {
+                    value = [];
+                    $(this).find('value').children().each(function() {
+                        value.push( node_to_object(this) );
+                    });
+                } else {
+                    value = node_to_object($(this).find('value').get(0));
+                }
+            } else {
+                key = $(this).prop('tagName');
+                value = node_to_object(this);
+            }
+            response[key] = value;
+        });
+    } else {
+        response = node_to_object($resultNode.get(0));
+    }
+
+    return response;
+}
+
+function node_to_object(node) {
+    if ($(node).children().length === 0) {
+        return get_node_value(node);
+    }
+
+    var object = is_xsi_type_node(node, "array") ? [] : {};
+    if ($(node).children('key, value').length == 2) {
+        var key   = node_to_object($(node).find('key').get(0));
+        var value = node_to_object($(node).find('value').get(0));
+        object[key] = value;
+    } else {
+        $(node).children().each(function() {
+            if ($.isArray(object)) {
+                object.push( node_to_object(this) );
+            } else {
+                $.extend(object, node_to_object(this));
+            }
+        });
+    }
+
+    return object;
+}
+
+function get_node_value(node) {
+    var nodeValue;
+    var nodeText = $(node).text();
+    var xsiAttributes = get_node_xsi_attributes(node);
+
+    if ($.inArray(nodeText, ["true", "false", "null"]) != -1
+        || xsiAttributes.type && xsiAttributes.type[1] == "boolean")
+    {
+        nodeValue = eval(nodeText);
+    } else if (xsiAttributes.nil) {
+        nodeValue = null;
+    } else {
+        nodeValue = nodeText;
+    }
+
+    return nodeValue;
+}
+
+function get_node_xsi_attributes(node) {
+    var attributes = {};
+    $.each(node.attributes, function() {
+        if (!this.specified || this.prefix != "xsi") {
+            return;
+        }
+
+        attributes[this.localName] = this.value.split(":");
+    });
+
+    return attributes;
+}
+
+function is_xsi_type_node(node, type) {
+    var xsiAttributes = get_node_xsi_attributes(node);
+
+    return xsiAttributes.type && xsiAttributes.type[1].toLowerCase() == type.toLowerCase();
 }
 
 function chat_append(text, name, time) {
@@ -642,7 +778,7 @@ function custom_log( log ) {
         return true;
     }
 
-    var log_me = ($.type(log) != "object") ? log : ($.browser.mozilla ? log.toSource() : log.error + ' | ' + log.success + ' | ' + log.time);
+    var log_me = ($.type(log) != "object") ? log : ($.browser.mozilla ? log.toSource() : JSON.stringify(log));
 
     $("div.log").clearQueue().append( $("<p>").text(log_me) ).animate({
         scrollTop: $("div.log").prop("scrollHeight")

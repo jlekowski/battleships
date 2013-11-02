@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<definitions name="Battleships"
+             targetNamespace="http://battleships.localhost/SOAP/server.php"
+             xmlns:tns="http://battleships.localhost/SOAP/server.php"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+             xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+             xmlns="http://schemas.xmlsoap.org/wsdl/">
+<!--    <types>
+        <xsd:schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="tns:Battleships">
+            <xsd:element name="test" type="xsd:string" />
+        </xsd:schema>
+    </types>-->
+
+    <message name="testRequest">
+        <part name="coords" type="xsd:string" />
+    </message>
+
+    <message name="testResponse">
+        <part name="coordsInfo" type="testResponse" />
+    </message>
+
+    <message name="getGameRequest">
+        <part name="hash" type="xsd:string" />
+        <part name="timezoneOffset" type="xsd:integer" />
+    </message>
+
+    <message name="getGameResponse">
+        <part name="gameData" type="xsd:object" />
+    </message>
+
+    <message name="updateNameRequest">
+        <part name="hash" type="xsd:string" />
+        <part name="playerName" type="xsd:string" />
+    </message>
+
+    <message name="updateNameResponse">
+        <part name="result" type="xsd:boolean" />
+    </message>
+
+    <message name="startGameRequest">
+        <part name="hash" type="xsd:string" />
+        <part name="ships" type="xsd:string" />
+    </message>
+
+    <message name="startGameResponse">
+        <part name="result" type="xsd:boolean" />
+    </message>
+
+    <message name="addShotRequest">
+        <part name="hash" type="xsd:string" />
+        <part name="coords" type="xsd:string" />
+    </message>
+
+    <message name="addShotResponse">
+        <part name="result" type="xsd:string" />
+    </message>
+
+    <message name="getUpdatesRequest">
+        <part name="hash" type="xsd:string" />
+        <part name="lastIdEvents" type="xsd:integer" />
+    </message>
+
+    <message name="getUpdatesResponse">
+        <part name="updates" type="xsd:object" />
+    </message>
+
+    <message name="addChatRequest">
+        <part name="hash" type="xsd:string" />
+        <part name="text" type="xsd:string" />
+    </message>
+
+    <message name="addChatResponse">
+        <part name="result" type="xsd:string" />
+    </message>
+
+    <portType name="BattleshipsSoapPortType">
+        <operation name="test">
+            <input message="BattleshipsSoapNs:testRequest"/>
+            <output message="BattleshipsSoapNs:testResponse"/>
+        </operation>
+        <operation name="coordsInfo">
+            <input message="BattleshipsSoapNs:testRequest"/>
+            <output message="BattleshipsSoapNs:testResponse"/>
+        </operation>
+        <operation name="getGame">
+            <input message="BattleshipsSoapNs:getGameRequest"/>
+            <output message="BattleshipsSoapNs:getGameResponse"/>
+        </operation>
+        <operation name="updateName">
+            <input message="BattleshipsSoapNs:updateNameRequest"/>
+            <output message="BattleshipsSoapNs:updateNameResponse"/>
+        </operation>
+        <operation name="startGame">
+            <input message="BattleshipsSoapNs:startGameRequest"/>
+            <output message="BattleshipsSoapNs:startGameResponse"/>
+        </operation>
+        <operation name="addShot">
+            <input message="BattleshipsSoapNs:addShotRequest"/>
+            <output message="BattleshipsSoapNs:addShotResponse"/>
+        </operation>
+        <operation name="getUpdates">
+            <input message="BattleshipsSoapNs:getUpdatesRequest"/>
+            <output message="BattleshipsSoapNs:getUpdatesResponse"/>
+        </operation>
+        <operation name="addChat">
+            <input message="BattleshipsSoapNs:addChatRequest"/>
+            <output message="BattleshipsSoapNs:addChatResponse"/>
+        </operation>
+    </portType>
+
+
+    <binding name="BattleshipsSoapBinding" type="BattleshipsSoapNs:BattleshipsSoapPortType">
+        <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <operation name="test">
+            <soap:operation soapAction="test"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+        <operation name="coordsInfo">
+            <soap:operation soapAction="coordsInfo"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+        <operation name="getGame">
+            <soap:operation soapAction="getGame"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:BattleshipsSoap"/>
+            </output>
+        </operation>
+        <operation name="updateName">
+            <soap:operation soapAction="updateName"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+        <operation name="startGame">
+            <soap:operation soapAction="startGame"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+        <operation name="addShot">
+            <soap:operation soapAction="addShot"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+        <operation name="getUpdates">
+            <soap:operation soapAction="getUpdates"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:BattleshipsSoap"/>
+            </output>
+        </operation>
+        <operation name="addChat">
+            <soap:operation soapAction="addChat"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+    </binding>
+
+    <service name="BattleshipsSoapService">
+        <port name="BattleshipsSoapPort" binding="BattleshipsSoapNs:BattleshipsSoapBinding">
+            <soap:address location="http://battleships.localhost/SOAP/server.php"/>
+        </port>
+    </service>
+</definitions>
