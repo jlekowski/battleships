@@ -3,7 +3,7 @@
  * Interface interaction
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    CLI test
+ * @version    0.3
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
