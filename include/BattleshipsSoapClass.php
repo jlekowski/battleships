@@ -65,8 +65,7 @@ class BattleshipsSoap extends Battleships
             // if updates, or no updates and limit is reached
             if (count((array)$updates) > 0 || (++$i > CHECK_UPDATES_COUNT)) {
                 break;
-            }
-            else {
+            } else {
                 sleep(CHECK_UPDATES_INTERVAL);
             }
         }

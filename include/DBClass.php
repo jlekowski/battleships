@@ -62,8 +62,7 @@ class DB extends PDO
             }
 
             $this->dbType = $dbType;
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             error_log($e->getMessage());
             exit('Database error occurred');
         }
@@ -78,11 +77,9 @@ class DB extends PDO
     {
         if ($this->isErrorCode($this->errorCode())) {
             $error = implode(" | ", $this->errorInfo());
-        }
-        else if ($this->sth instanceof PDOStatement && $this->isErrorCode($this->sth->errorCode())) {
+        } else if ($this->sth instanceof PDOStatement && $this->isErrorCode($this->sth->errorCode())) {
             $error = implode(" | ", $this->sth->errorInfo());
-        }
-        else {
+        } else {
             $error = $this->error;
         }
 

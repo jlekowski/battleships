@@ -26,17 +26,13 @@ class BattleshipsCliInterface
         while ($this->runInterface) {
             $command = "";
 
-            if (empty($this->oBattleshipsGame))
-            {
+            if (empty($this->oBattleshipsGame)) {
                 $command = "initGame";
-            }
-            else if (count($this->oBattleshipsGame->getPlayerShips()) == 0) {
+            } else if (count($this->oBattleshipsGame->getPlayerShips()) == 0) {
                 $command = "startGame";
-            }
-            else if ($this->oBattleshipsGame->getOtherStarted() && $this->oBattleshipsGame->isMyTurn()) {
+            } else if ($this->oBattleshipsGame->getOtherStarted() && $this->oBattleshipsGame->isMyTurn()) {
                 $command = "addShot";
-            }
-            else {
+            } else {
                 $command = "update";
             }
 
@@ -200,12 +196,10 @@ class BattleshipsCliInterface
                 if ($i == 0 && $j > 0) {
                     $text = Battleships::$axisY[($j - 1)];
                     $board .= sprintf(" % 2s ", $text);
-                }
-                else if ($j == 0 && $i > 0) {
+                } else if ($j == 0 && $i > 0) {
                     $text = Battleships::$axisX[($i - 1)];
                     $board .= sprintf(" % 2s |", $text);
-                }
-                else  if ($j > 0 && $i > 0) {
+                } else if ($j > 0 && $i > 0) {
                     $coords = Battleships::$axisY[($j - 1)] . Battleships::$axisX[($i - 1)];
                     $text = array_key_exists($coords, $battle['playerGround']) ? $marks[ $battle['playerGround'][$coords] ] : "";
                     $board .= sprintf(" % 1s |", $text);
@@ -220,12 +214,10 @@ class BattleshipsCliInterface
                     }
                     $text = Battleships::$axisY[($j - 1)];
                     $board .= sprintf(" % 2s ", $text);
-                }
-                else if ($j == 0 && $i > 0) {
+                } else if ($j == 0 && $i > 0) {
                     $text = Battleships::$axisX[($i - 1)];
                     $board .= sprintf(" % 2s |", $text);
-                }
-                else  if ($j > 0 && $i > 0) {
+                } else if ($j > 0 && $i > 0) {
                     $coords = Battleships::$axisY[($j - 1)].Battleships::$axisX[($i - 1)];
                     $text = array_key_exists($coords, $battle['otherGround']) ? $marks[ $battle['otherGround'][$coords] ] : "";
                     $board .= sprintf(" % 1s |", $text);

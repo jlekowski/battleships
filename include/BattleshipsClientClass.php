@@ -40,8 +40,7 @@ class BattleshipsClient
     {
         try {
             $this->soapClient = new SoapClient(WSDL_URL, array('cache_wsdl' => WSDL_CACHE_NONE, 'trace' => true));
-        }
-        catch (SoapFault $e) {
+        } catch (SoapFault $e) {
             $this->setError($e->getMessage());
         }
     }
@@ -55,8 +54,7 @@ class BattleshipsClient
     {
         try {
             $game = $this->soapClient->getGame($hash);
-        }
-        catch (SoapFault $e) {
+        } catch (SoapFault $e) {
             $this->setError($e->getMessage());
         }
 
@@ -72,8 +70,7 @@ class BattleshipsClient
             if ($result) {
                 $oBattleshipsGame->setPlayerName($playerName);
             }
-        }
-        catch (SoapFault $e) {
+        } catch (SoapFault $e) {
             $this->setError($e->getMessage());
         }
     }
@@ -89,8 +86,7 @@ class BattleshipsClient
                     $oBattleshipsGame->battle['playerGround'][$value] = "ship";
                 }
             }
-        }
-        catch (SoapFault $e) {
+        } catch (SoapFault $e) {
             $this->setError($e->getMessage());
         }
 
@@ -107,8 +103,7 @@ class BattleshipsClient
                 $whoseTurn = $result == "miss" ? $oBattleshipsGame->getOtherNumber() : $oBattleshipsGame->getPlayerNumber();
                 $oBattleshipsGame->setWhoseTurn($whoseTurn);
             }
-        }
-        catch (SoapFault $e) {
+        } catch (SoapFault $e) {
             $this->setError($e->getMessage());
         }
 
@@ -119,8 +114,7 @@ class BattleshipsClient
     {
         try {
             $result = $this->soapClient->getUpdates($oBattleshipsGame->getPlayerHash(), $oBattleshipsGame->getLastIdEvents());
-        }
-        catch (SoapFault $e) {
+        } catch (SoapFault $e) {
             $this->setError($e->getMessage());
         }
 
@@ -154,8 +148,7 @@ class BattleshipsClient
                 if (in_array($update, $oBattleshipsGame->getPlayerShips())) {
                     $shotResult = "hit";
                     $whoseTurn = $oBattleshipsGame->getOtherNumber();
-                }
-                else {
+                } else {
                     $shotResult = "miss";
                     $whoseTurn = $oBattleshipsGame->getPlayerNumber();
                 }

@@ -347,11 +347,9 @@ class Battleships
                     'text' => $value['event_value'],
                     'time' => date("Y-m-d H:i:s", $value['timestamp'] + $this->oBattleshipsGame->getTimezoneOffset())
                 );
-            }
-            else if ($value['event_type'] == 'start_game') {
+            } else if ($value['event_type'] == 'start_game') {
                 $event_value = true;
-            }
-            else {
+            } else {
                 $event_value = $value['event_value'];
             }
 
@@ -462,12 +460,10 @@ class Battleships
         // If other ship at these coordinates (if hit)
         if (array_search($coords, $this->oBattleshipsGame->getOtherShips()) === false) {
             $result = "miss";
-        }
-        // If other ship is sunk after this hit
-        else if ($this->checkSunk($coords)) {
+        } else if ($this->checkSunk($coords)) {
+            // If other ship is sunk after this hit
             $result = "sunk";
-        }
-        else {
+        } else {
             $result = "hit";
         }
 
@@ -485,7 +481,7 @@ class Battleships
      *
      * @return bool Whether the ship is sunk after this shot or not
      */
-    private function checkSunk($coords, $shooter = "player",  $direction = null)
+    private function checkSunk($coords, $shooter = "player", $direction = null)
     {
         $coordsInfo = self::coordsInfo($coords);
         if ($coordsInfo === false) {
@@ -494,7 +490,7 @@ class Battleships
         }
 
         if (!in_array($shooter, array("player", "other"))) {
-            $this->setError("Incorrect shooter (" . $shooter. ")");
+            $this->setError("Incorrect shooter (" . $shooter . ")");
             return false;
         }
 
@@ -523,9 +519,8 @@ class Battleships
             // if there's a mast there and it's been hit, check this direction for more masts
             if ($ship !== false && $shot !== false) {
                 $check_sunk = $this->checkSunk($value, $shooter, $key);
-            }
-            // if mast hasn't been hit, the the ship can't be sunk
-            elseif ($ship !== false) {
+            } else if ($ship !== false) {
+                // if mast hasn't been hit, the the ship can't be sunk
                 $check_sunk = false;
             }
 
@@ -662,11 +657,9 @@ class Battleships
             foreach ($shots[ $prefix[0] ] as $value) {
                 if (array_search($value, $ships[ $prefix[1] ]) === false) {
                     $shot = "miss";
-                }
-                else if ($this->checkSunk($value, $prefix[0])) {
+                } else if ($this->checkSunk($value, $prefix[0])) {
                     $shot = "sunk";
-                }
-                else {
+                } else {
                     $shot = "hit";
                 }
 
@@ -880,12 +873,10 @@ class Battleships
 
         if (empty($result)) {
             $whoseTurn = 1;
-        }
-        else if ($result['player'] == $this->oBattleshipsGame->getPlayerNumber()) {
+        } else if ($result['player'] == $this->oBattleshipsGame->getPlayerNumber()) {
             $whoseTurn = in_array($result['event_value'], $this->oBattleshipsGame->getOtherShips())
                 ? $this->oBattleshipsGame->getPlayerNumber() : $this->oBattleshipsGame->getOtherNumber();
-        }
-        else {
+        } else {
             $whoseTurn = in_array($result['event_value'], $this->oBattleshipsGame->getPlayerShips())
                 ? $this->oBattleshipsGame->getOtherNumber() : $this->oBattleshipsGame->getPlayerNumber();
         }
@@ -914,11 +905,9 @@ class Battleships
             for ($j = 0; $j < 11; $j++) {
                 if ($i == 0 && $j > 0) {
                     $text = self::$axisY[($j - 1)];
-                }
-                else if ($j == 0 && $i > 0) {
+                } else if ($j == 0 && $i > 0) {
                     $text = self::$axisX[($i - 1)];
-                }
-                else {
+                } else {
                     $text = "";
                 }
 

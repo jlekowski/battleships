@@ -33,10 +33,11 @@ define('CHECK_UPDATES_TIMEOUT',  120);   // AJAX call timeout in seconds
 define('CHECK_UPDATES_INTERVAL', 2);     // interval between updates checks in seconds
 define('CHECK_UPDATES_COUNT',    3);    // how many times to check for updates
 
-ini_set("display_errors" , "1");
-ini_set("log_errors" , "1");
-ini_set("error_log" , LOG_PATH.LOG_FILE);
+ini_set("display_errors", 1);
+ini_set("log_errors", 1);
+ini_set("error_log", LOG_PATH.LOG_FILE);
 
-function __autoload($className) {
+function __autoload($className)
+{
     require_once INCLUDE_PATH . $className . "Class.php";
 }

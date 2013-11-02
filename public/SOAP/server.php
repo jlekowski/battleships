@@ -20,7 +20,6 @@ try {
     $oServer = new SoapServer(WSDL_FILE);
     $oServer->setClass("BattleshipsSoap", new BattleshipsGame(), $oDB);
     $oServer->handle();
-}
-catch (SoapFault $e) {
+} catch (SoapFault $e) {
     var_dump($e);
 }
