@@ -866,7 +866,7 @@ class Battleships
 
     /**
      * Finds and sets which player's turn it is
-     * 
+     *
      * @return bool Whether turn determined
      */
     private function determineWhoseTurn()

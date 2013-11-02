@@ -10,12 +10,13 @@ App is by default set in dev/debug mode for long calls (which might not work wel
 http://dev.lekowski.pl/
 OR
 from command line run:
-php public/SOAP/client.php
+php bin/client.php
 
 ## === Installation ===
 1. Download from https://github.com/jlekowski/battleships/
 2. Copy to your web server directory (advised to point domain to public folder)
  * You might need to add writing permission to db\ directory (chmod 777)
+ * You might need to add writing permission to log\ directory (chmod 777)
  * You might need change to short calls (see setup paragraph)
 3. Enter the URL and enjoy the game
 

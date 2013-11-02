@@ -500,7 +500,7 @@ function get_battle(callback) {
 
             var gameData = soap_to_object(soapResponse, "gameData");
             custom_log(gameData);
-            
+
             for (key in commaSeparated) {
                 var value = commaSeparated[key];
                 gameData[value] = gameData[value] ? gameData[value].split(",") : [];
