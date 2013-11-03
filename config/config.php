@@ -8,7 +8,6 @@
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
- * @todo       Change the code to be compatible with PHP Strict Standards (and remove E_STRICT from error reporting)
  */
 
 error_reporting(E_ALL & ~E_STRICT); // set E_ALL for debugging
@@ -33,7 +32,7 @@ define('CHECK_UPDATES_TIMEOUT',  120);   // AJAX call timeout in seconds
 define('CHECK_UPDATES_INTERVAL', 2);     // interval between updates checks in seconds
 define('CHECK_UPDATES_COUNT',    3);    // how many times to check for updates
 
-ini_set("display_errors", 1);
+ini_set("display_errors", 0);
 ini_set("log_errors", 1);
 ini_set("error_log", LOG_PATH.LOG_FILE);
 

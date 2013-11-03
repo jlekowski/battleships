@@ -11,11 +11,6 @@
  */
 class BattleshipsSoap extends Battleships
 {
-    public function test($param)
-    {
-        return $param . "+server";
-    }
-
     public function getGame($hash = "", $timezoneOffset = 0)
     {
         parent::initGame($hash);

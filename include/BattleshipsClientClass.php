@@ -34,6 +34,7 @@ class BattleshipsClient
     public function setError($error)
     {
         $this->error = $error;
+        error_log($error);
     }
 
     public function __construct()
@@ -47,7 +48,7 @@ class BattleshipsClient
 
     /**
      *
-     * @param type $hash
+     * @param string $hash
      * @return BattleshipsGame
      */
     public function getGame($hash)

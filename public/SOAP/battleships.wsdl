@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <definitions name="Battleships"
-             targetNamespace="http://battleships.localhost/SOAP/server.php"
-             xmlns:tns="http://battleships.localhost/SOAP/server.php"
+             targetNamespace="http://dev.lekowski.pl/battleships/public/SOAP/server.php"
+             xmlns:tns="http://dev.lekowski.pl/battleships/public/SOAP/server.php"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
              xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
              xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
@@ -12,14 +12,6 @@
             <xsd:element name="test" type="xsd:string" />
         </xsd:schema>
     </types>-->
-
-    <message name="testRequest">
-        <part name="coords" type="xsd:string" />
-    </message>
-
-    <message name="testResponse">
-        <part name="coordsInfo" type="testResponse" />
-    </message>
 
     <message name="getGameRequest">
         <part name="hash" type="xsd:string" />
@@ -76,14 +68,6 @@
     </message>
 
     <portType name="BattleshipsSoapPortType">
-        <operation name="test">
-            <input message="BattleshipsSoapNs:testRequest"/>
-            <output message="BattleshipsSoapNs:testResponse"/>
-        </operation>
-        <operation name="coordsInfo">
-            <input message="BattleshipsSoapNs:testRequest"/>
-            <output message="BattleshipsSoapNs:testResponse"/>
-        </operation>
         <operation name="getGame">
             <input message="BattleshipsSoapNs:getGameRequest"/>
             <output message="BattleshipsSoapNs:getGameResponse"/>
@@ -113,24 +97,6 @@
 
     <binding name="BattleshipsSoapBinding" type="BattleshipsSoapNs:BattleshipsSoapPortType">
         <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
-        <operation name="test">
-            <soap:operation soapAction="test"/>
-            <input>
-                <soap:body use="literal"/>
-            </input>
-            <output>
-                <soap:body use="literal"/>
-            </output>
-        </operation>
-        <operation name="coordsInfo">
-            <soap:operation soapAction="coordsInfo"/>
-            <input>
-                <soap:body use="literal"/>
-            </input>
-            <output>
-                <soap:body use="literal"/>
-            </output>
-        </operation>
         <operation name="getGame">
             <soap:operation soapAction="getGame"/>
             <input>
@@ -189,7 +155,7 @@
 
     <service name="BattleshipsSoapService">
         <port name="BattleshipsSoapPort" binding="BattleshipsSoapNs:BattleshipsSoapBinding">
-            <soap:address location="http://battleships.localhost/SOAP/server.php"/>
+            <soap:address location="http://dev.lekowski.pl/battleships/public/SOAP/server.php"/>
         </port>
     </service>
 </definitions>

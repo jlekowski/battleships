@@ -21,5 +21,5 @@ try {
     $oServer->setClass("BattleshipsSoap", new BattleshipsGame(), $oDB);
     $oServer->handle();
 } catch (SoapFault $e) {
-    var_dump($e);
+    error_log($e->getMessage());
 }
