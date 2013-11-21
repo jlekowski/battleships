@@ -267,6 +267,7 @@ function shot(element) {
     var coords = get_coords(element);
 
     shot_prevent = true;
+    $(".board_menu:eq(0) span").removeClass("turn");
 
     $.soap({
         method: 'addShot',
@@ -280,11 +281,15 @@ function shot(element) {
 
             if (result === "") {
                 shot_prevent = false;
+                $(".board_menu:eq(0) span").addClass("turn");
                 return false;
             }
 
             if (result != "miss") {
                 shot_prevent = false;
+                $(".board_menu:eq(0) span").addClass("turn");
+            } else {
+                $(".board_menu:eq(1) span").addClass("turn");
             }
 
             mark_shot(1, coords, result);
@@ -456,6 +461,7 @@ function get_updates() {
                         case 'shot':
                             if (mark_shot(0, update) == "miss") {
                                 shot_prevent = false;
+                                $(".board_menu span").toggleClass("turn");
                             }
                             break;
 
@@ -510,6 +516,9 @@ function get_battle(callback) {
 
                 if (gameData.whoseTurn == gameData.playerNumber) {
                     shot_prevent = false;
+                    $(".board_menu:eq(0) span").addClass("turn");
+                } else {
+                    $(".board_menu:eq(1) span").addClass("turn");
                 }
             }
 

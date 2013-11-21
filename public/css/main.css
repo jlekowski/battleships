@@ -50,6 +50,10 @@ div.board_menu span {
     display: block;
 }
 
+div.board_menu span.turn {
+    background-color: #fcb;
+}
+
 div.board_menu input {
     display: none;
     font: inherit;
