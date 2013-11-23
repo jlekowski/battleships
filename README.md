@@ -38,3 +38,22 @@ php bin/client.php
 #### public/js/main.js
 * debug
  * set to true for debugging mode
+
+## === Changelog ===
+
+* version **0.4**
+ * Added marking whose turn it is
+ * Added random ships setting
+* version **0.3**
+ * Moved webservice to SOAP
+ * Added command line client
+* version **0.2.2b**
+ * Fixed auto start update and escape encoding
+* version **0.2.1b**
+ * Fixed check sunk ship bug
+* version **0.2b**
+ * Fixed bugs
+ * Refactored code
+ * Updated documentation
+* version **0.1b**
+ * Created first working battleships game

@@ -4,7 +4,7 @@
  * client for PHP CLI
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.3
+ * @version    0.4
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.3
  *
