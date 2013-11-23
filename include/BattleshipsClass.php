@@ -455,6 +455,16 @@ class Battleships
             return false;
         }
 
+        if ($this->oBattleshipsGame->getOtherStarted() == false) {
+            $this->setError("Other player has not started yet");
+            return false;
+        }
+
+        if ($this->oBattleshipsGame->isMyTurn() == false) {
+            $this->setError("It's other player's turn");
+            return false;
+        }
+
         $this->addEvent("shot", $coords);
 
         // If other ship at these coordinates (if hit)

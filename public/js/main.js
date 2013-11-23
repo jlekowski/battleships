@@ -7,6 +7,7 @@
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
+ * @todo       0. game_started and set_turn take into consideration other player started
  * @todo       1. Move variables and function into Battleships object
  *
  */
@@ -20,8 +21,10 @@ var axis_y = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 var axis_x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 // keys after pushing which we type in chatbox (A-Z, 0-9, :,._+)
 var chatbox_keys = "48-57, 59, 65-90, 96-105, 110, 188-191, 219-222";
-// whether the game is started
+// whether the game has started
 var game_started = false;
+// whether the game has started
+var game_ended = false;
 // prevents shooting (when game not started or other player's turn)
 var shot_prevent = true;
 // true - updates are requested (updating ON); false - you can start requesting updates (updating OFF);
@@ -59,187 +62,41 @@ $.soap({
 
 $(document).ready(function() {
     $battleground = $("div:gt(0) div:not(:first-child)", "div.board");
+    $battleground.board = function(index) {
+        return index == 0 ? $battleground.slice(0, 100) : $battleground.slice(100);
+    };
+
     $chatbox = $("#chatbox :text");
 
     // parse key range to array
     parse_chatbox_keys();
-
     // when start typing and not focused on text field, focus to type on chatbox
-    $(this).keydown(function(event) {
-        if ((event.which == 17) || (event.which == 18)) {
-            focus_prevent = true;
-            return true;
-        }
-
-        if (focus_prevent || $(event.target).is(":text") || ($.inArray(event.which, chatbox_keys) == -1)) {
-            return true;
-        }
-
-        $chatbox.focus();
-    }).keyup(function(event) {
-        focus_prevent = false;
-    });
-
+    $(this).on({keydown: documentKeydown, keyup: documentKeyup});
 
     // board handling
-    $battleground.click(function() {
-        // marking opponents ships
-        if ($battleground.index(this) >= 100) {
-            shot(this);
-        } else if (!game_started) {
-            // if game not started set the ship
-            $(this).toggleClass("ship");
-        }
-    });
-
+    $battleground.on('click', battlegroundClick);
 
     // starting the game
-    $("#start").click(function() {
-        if (game_started) {
-            alert("Game is already started");
-            return false;
-        }
-
-        var $ships = $battleground.slice(0, 100).filter(".ship");
-
-        if (ships_check($ships) == false) {
-            alert("There is either not enough ships or they're set incorrectly");
-            return false;
-        }
-
-        var shipsString = $ships.map(function() {
-            return get_coords(this).join('');
-        }).toArray().join(",");
-
-        $.soap({
-            method: 'startGame',
-            params: {
-                hash: $("#hash").val(),
-                ships: shipsString
-            },
-            success: function(soapResponse) {
-                var result = soap_to_object(soapResponse, "result");
-                custom_log(result);
-
-                if (result !== true) {
-                    return false;
-                }
-
-                game_start();
-            }
-        });
-    });
-
+    $("#start").on('click', startClick);
 
     // updating player's name
-    $("#name_update").click(function() {
-        $(this).hide().siblings(":text").show().select();
-    }).siblings(":text").keyup(function(event) {
-        // if pressed ESC - leave the input, if ENTER - process, if other - do nothing
-        if (event.which != 13) {
-            if (event.which == 27) {
-                $(this).blur();
-                $chatbox.focus();
-            }
-
-            return true;
-        }
-
-
-        var $input      = $(this);
-        var player_name = $input.val();
-
-        $.soap({
-            method: 'updateName',
-            params: {
-                hash: $("#hash").val(),
-                playerName: $('<span>').text(player_name).html()
-            },
-            success: function(soapResponse) {
-                var result = soap_to_object(soapResponse, "result");
-                custom_log(result);
-
-                if (result !== true) {
-                    return false;
-                }
-
-                $input.hide().siblings("span").text(player_name).show();
-            }
-        });
-    }).blur(function() {
-        if ($(this).has(":visible")) {
-            var player_name = $(this).siblings("span").text();
-
-            $(this).hide().val(player_name).siblings("span").show();
-        }
-    });
-
+    $("#name_update").on('click', nameUpdateClick)
+        .siblings(":text").on({keyup: nameUpdateTextKeyup, blur: nameUpdateTextBlur});
 
     // updates management
-    $("#update").click(function() {
-        update_execute = !update_execute;
-
-        if (update_execute) {
-            $(this).text("Updates [ON]");
-            get_updates();
-        } else {
-            $(this).text("Updates [OFF]");
-            stop_update();
-        }
-    });
+    $("#update").on('click', updateClick);
 
     // starts new game
-    $("#new_game").click(function() {
-        if (confirm("Are you sure you want to quit the current game?")) {
-            window.location = window.location.protocol + "//" + window.location.hostname + window.location.pathname;
-        }
-    });
-
+    $("#new_game").on('click', newGameClick);
 
     // send chat text
-    $chatbox.keyup(function(event) {
-        if (event.which != 13) {
-            return true;
-        }
-
-        var text = $.trim($chatbox.val());
-
-        if (text == "") {
-            return true;
-        }
-
-        $chatbox.prop('disabled', true);
-
-        $.soap({
-            method: 'addChat',
-            params: {
-                hash: $("#hash").val(),
-                text: $('<span>').text(text).html()
-            },
-            success: function(soapResponse) {
-                var result = soap_to_object(soapResponse, "result");
-                custom_log(result);
-                $chatbox.prop('disabled', false);
-
-                if (result <= 0) {
-                    return false;
-                }
-
-                chat_append(text, $("#name_update").text(), result);
-                $chatbox.val("");
-            }
-        });
-    });
-
+    $chatbox.on('keyup', chatboxKeyup);
 
     // shoot randomly
-    $("#random_shot").click(function() {
-        var $empty_fields = $battleground.slice(100).not(".miss, .hit");
-        // random from 0 to the amount of empty fields - 1 (because first's index is 0)
-        var index = Math.floor(Math.random() * $empty_fields.length);
-        $empty_fields.eq(index).click();
-    });
+    $("#random_shot").on('click', random_shot);
 
+    // set ships randomly
+    $("#random_ships").on('click', {retry: 2}, random_ships);
 
     if (debug === true) {
         $("#update, div.log").show();
@@ -247,10 +104,182 @@ $(document).ready(function() {
 
     // first call to load ships, battle and chats
     get_battle(function() {
+        check_game_end();
         // start AJAX calls for updates
         $("#update").triggerHandler('click');
     });
 });
+
+
+function documentKeydown(event) {
+    if ((event.which == 17) || (event.which == 18)) {
+        focus_prevent = true;
+        return true;
+    }
+
+    if (focus_prevent || $(event.target).is(":text") || ($.inArray(event.which, chatbox_keys) == -1)) {
+        return true;
+    }
+
+    $chatbox.focus();
+}
+
+
+function documentKeyup() {
+    focus_prevent = false;
+}
+
+
+function battlegroundClick() {
+    // marking opponents ships
+    if ($battleground.index(this) >= 100) {
+        shot(this);
+    } else if (!game_started) {
+        // if game not started set the ship
+        $(this).toggleClass("ship");
+    }
+}
+
+
+function startClick() {
+    if (game_started) {
+        alert("Game has already started");
+        return false;
+    }
+
+    var $ships = $battleground.board(0).filter(".ship");
+
+    if (ships_check($ships) == false) {
+        alert("There is either not enough ships or they're set incorrectly");
+        return false;
+    }
+
+    var shipsString = $ships.map(function() {
+        return get_coords(this).join('');
+    }).toArray().join(",");
+
+    $.soap({
+        method: 'startGame',
+        params: {
+            hash: $("#hash").val(),
+            ships: shipsString
+        },
+        success: function(soapResponse) {
+            var result = soap_to_object(soapResponse, "result");
+            custom_log(result);
+
+            if (result !== true) {
+                return false;
+            }
+
+            game_start($("#playerNumber").val() == 1);
+        }
+    });
+}
+
+
+function nameUpdateClick() {
+    $(this).hide().siblings(":text").show().select();
+}
+
+
+function nameUpdateTextKeyup(event) {
+    // if pressed ESC - leave the input, if ENTER - process, if other - do nothing
+    if (event.which != 13) {
+        if (event.which == 27) {
+            $(this).blur();
+            $chatbox.focus();
+        }
+
+        return true;
+    }
+
+
+    var $input      = $(this);
+    var player_name = $input.val();
+
+    $.soap({
+        method: 'updateName',
+        params: {
+            hash: $("#hash").val(),
+            playerName: $('<span>').text(player_name).html()
+        },
+        success: function(soapResponse) {
+            var result = soap_to_object(soapResponse, "result");
+            custom_log(result);
+
+            if (result !== true) {
+                return false;
+            }
+
+            $input.hide().siblings("span").text(player_name).show();
+        }
+    });
+}
+
+
+function nameUpdateTextBlur() {
+    if ($(this).has(":visible")) {
+        var player_name = $(this).siblings("span").text();
+
+        $(this).hide().val(player_name).siblings("span").show();
+    }
+}
+
+
+function updateClick() {
+    update_execute = !update_execute;
+
+    if (update_execute) {
+        $(this).text("Updates [ON]");
+        get_updates();
+    } else {
+        $(this).text("Updates [OFF]");
+        stop_update();
+    }
+}
+
+
+function newGameClick() {
+    if (confirm("Are you sure you want to quit the current game?")) {
+        window.location = window.location.protocol + "//" + window.location.hostname + window.location.pathname;
+    }
+}
+
+
+function chatboxKeyup(event) {
+    if (event.which != 13) {
+        return true;
+    }
+
+    var text = $.trim($chatbox.val());
+
+    if (text == "") {
+        return true;
+    }
+
+    $chatbox.prop('disabled', true);
+
+    $.soap({
+        method: 'addChat',
+        params: {
+            hash: $("#hash").val(),
+            text: $('<span>').text(text).html()
+        },
+        success: function(soapResponse) {
+            var result = soap_to_object(soapResponse, "result");
+            custom_log(result);
+            $chatbox.prop('disabled', false);
+
+            if (result <= 0) {
+                return false;
+            }
+
+            chat_append(text, $("#name_update").text(), result);
+            $chatbox.val("");
+        }
+    });
+}
 
 
 function shot(element) {
@@ -264,10 +293,14 @@ function shot(element) {
         return false;
     }
 
+    if ($(element).is(".miss, .hit")) {
+        custom_log("You either already shot this field, or no ship could be there");
+        return;
+    }
+
     var coords = get_coords(element);
 
-    shot_prevent = true;
-    $(".board_menu:eq(0) span").removeClass("turn");
+    set_turn();
 
     $.soap({
         method: 'addShot',
@@ -280,19 +313,16 @@ function shot(element) {
             custom_log(result);
 
             if (result === "") {
-                shot_prevent = false;
-                $(".board_menu:eq(0) span").addClass("turn");
+                set_turn(true);
                 return false;
             }
 
-            if (result != "miss") {
-                shot_prevent = false;
-                $(".board_menu:eq(0) span").addClass("turn");
-            } else {
-                $(".board_menu:eq(1) span").addClass("turn");
-            }
-
+            set_turn(result != "miss");
             mark_shot(1, coords, result);
+
+            if (result == "sunk") {
+                check_game_end();
+            }
         }
     });
 }
@@ -430,7 +460,7 @@ function get_updates() {
             custom_log(result);
 
             if (update_execute !== false) {
-                last_timeout = setTimeout("get_updates(true)", update_interval);
+                last_timeout = setTimeout(get_updates, update_interval);
             }
 
             if (result === null || result === false || result.length == 0) {
@@ -448,20 +478,22 @@ function get_updates() {
                             break;
 
                         case 'start_game':
-                            shot_prevent = false;
+                            set_turn($("#playerNumber").val() == 1);
                             $("div.board:eq(1) div div:not(:first-child)").css('border-right-color', "black");
                             $("div.board:eq(1) div:not(:first-child) div").css('border-bottom-color', "black");
                             break;
 
                         case 'join_game':
-                            $("div.board_menu:eq(1) span").css({'font-weight': "bold"});
+                            $("div.board_menu:eq(1) span").css({fontWeight: "bold"});
                             $("#game_link").text("");
                             break;
 
                         case 'shot':
-                            if (mark_shot(0, update) == "miss") {
-                                shot_prevent = false;
-                                $(".board_menu span").toggleClass("turn");
+                            var shotResult = mark_shot(0, update);
+                            if (shotResult == "miss") {
+                                set_turn(true);
+                            } else if (shotResult == "sunk") {
+                                check_game_end();
                             }
                             break;
 
@@ -512,14 +544,7 @@ function get_battle(callback) {
             lastIdEvents = gameData.lastIdEvents;
 
             if (gameData.playerShips.length > 0) {
-                game_start();
-
-                if (gameData.whoseTurn == gameData.playerNumber) {
-                    shot_prevent = false;
-                    $(".board_menu:eq(0) span").addClass("turn");
-                } else {
-                    $(".board_menu:eq(1) span").addClass("turn");
-                }
+                game_start(gameData.whoseTurn == gameData.playerNumber);
             }
 
             for (key in gameData.playerShips) {
@@ -539,7 +564,7 @@ function get_battle(callback) {
                 chat_append(chats[key].text, chats[key].name, chats[key].time);
             }
 
-            if (typeof callback == "function") {
+            if ($.type(callback) == "function") {
                 callback();
             }
         }
@@ -669,9 +694,38 @@ function chat_append(text, name, time) {
     }, 'slow');
 }
 
-function game_start() {
+function game_start(turn) {
     game_started = true;
     $("#start").prop('disabled', true);
+    $("#random_shot, #random_ships").toggle();
+    set_turn(turn);
+}
+
+function check_game_end() {
+    if (game_ended) {
+        return game_ended;
+    }
+
+    if ($battleground.board(0).filter(".hit").length >= 20) {
+        alert("You lost");
+        game_ended = true;
+    } else if ($battleground.board(1).filter(".hit").length >= 20) {
+        alert("You won");
+        game_ended = true;
+    }
+
+    return game_ended;
+}
+
+function set_turn(isMe) {
+    if ($.type(isMe) == "undefined") {
+        $(".board_menu span").removeClass("turn");
+    } else {
+        $(".board_menu:eq(" + Number(!isMe) + ") span").addClass("turn");
+        $(".board_menu:eq(" + Number(isMe) + ") span").removeClass("turn");
+    }
+    shot_prevent = !isMe;
+    $("#random_shot").prop('disabled', !isMe);
 }
 
 function ships_check($ships) {
@@ -687,7 +741,6 @@ function ships_check($ships) {
     if (ships_array.length != ships_length) {
         return false;
     }
-
 
     // check if no edge connection
     for (i in ships_array) {
@@ -775,6 +828,117 @@ function parse_chatbox_keys() {
     }
 }
 
+function random_shot() {
+    var $empty_fields = $battleground.board(1).not(".miss, .hit");
+    // random from 0 to the amount of empty fields - 1 (because first's index is 0)
+    var index = Math.floor(Math.random() * $empty_fields.length);
+    $empty_fields.eq(index).trigger('click');
+}
+
+function random_ships(event) {
+    var orientations = [0, 1]; // 0 - vertical, 1 - horizontal
+    var direction_multipliers = [1, 10];
+    var ships_types = {1:4, 2:3, 3:2, 4:1};
+
+    $battleground.board(0).filter(".ship").click();
+    for (var i in ships_types) {
+        var masts = ships_types[i];
+
+        for (var j = 0; j < i; j++) {
+            var orientation = orientations[ Math.floor(Math.random() * orientations.length) ];
+            mark_restricted_starts(masts, orientation);
+            var $startFields = $battleground.board(0).not(".restricted")
+
+            var index = Math.floor(Math.random() * $startFields.length);
+            var idx = $battleground.index( $startFields.eq(index) );
+            for (var k = 0; k < masts; k++) {
+                $battleground.eq(idx + k * direction_multipliers[orientation]).click();
+            }
+        }
+    }
+
+    if (ships_check($battleground.board(0).filter(".ship")) == false) {
+        if (event.data && event.data.retry > 0) {
+            $battleground.board(0).removeClass("ship");
+            event.data.retry--;
+            return random_ships(event);
+        }
+
+        return false;
+    }
+
+    $battleground.board(0).removeClass("restricted");
+
+    return true;
+}
+
+function mark_restricted_starts(masts, orientation) {
+    var direction_multipliers = [1, 10];
+
+    var marks = $battleground.board(0).filter(".ship").map(function() {
+        var index = $battleground.index(this);
+        var idx = ((index < 10 ? "0" : "") + index).split("");
+        var border_distance = parseInt(idx[Number(!orientation)]);
+
+        var mark = [index];
+
+        if (idx[0] < 9) {
+            mark.push(index + 10);
+            if (idx[1] < 9) {
+                mark.push(index + 11);
+            }
+            if (idx[1] > 0) {
+                mark.push(index + 9);
+            }
+        }
+
+        if (idx[0] > 0) {
+            mark.push(index - 10);
+            if (idx[1] < 9) {
+                mark.push(index - 9);
+            }
+            if (idx[1] > 0) {
+                mark.push(index - 11);
+            }
+        }
+
+        if (idx[1] < 9) {
+            mark.push(index + 1);
+        }
+
+        if (idx[1] > 0) {
+            mark.push(index - 1);
+        }
+
+        for (var k = 2; (border_distance - k >= 0) && (k <= masts); k++) {
+            var safe_index = index - (k * direction_multipliers[orientation]);
+            var safe_idx = ((safe_index < 10 ? "0" : "") + safe_index).split("");
+            mark.push(safe_index);
+
+            if (safe_idx[orientation] > 0) {
+                mark.push(safe_index - direction_multipliers[Number(!orientation)]);
+            }
+            if (safe_idx[orientation] < 9) {
+                mark.push(safe_index + direction_multipliers[Number(!orientation)]);
+            }
+        }
+
+        return mark;
+    }).toArray();
+
+    $battleground.board(0).removeClass("restricted");
+
+    for (var i in marks) {
+        $battleground.board(0).eq(marks[i]).addClass("restricted");
+    }
+
+    if (orientation == 0) {
+        $battleground.board(0).filter('div:nth-child(n+' + (13 - masts) + ')').addClass("restricted")
+    } else {
+        $battleground.board(0).slice((11 - masts) * 10).addClass("restricted");
+    }
+}
+
 function custom_log(log) {
     if (debug !== true) {
         return true;
@@ -787,11 +951,4 @@ function custom_log(log) {
     }, 'slow');
 
     console.log(log);
-}
-
-function temp() {
-    var a = [0, 19, 45, 55, 58, 59, 60, 61, 62, 65, 75, 88, 89, 94, 95, 96];
-    for (i in a) {
-        $battleground.eq(a[i]).addClass("ship");
-    }
 }

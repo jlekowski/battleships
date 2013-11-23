@@ -79,6 +79,7 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
         <button id="start">Start</button>
         <button id="update">Updates [OFF]</button>
         <button id="new_game">New Game</button>
+        <button id="random_ships">Random Ships</button>
         <button id="random_shot">Random Shot</button>
     </div>
     <div class="board_container">
@@ -114,5 +115,6 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
     </div>
 
     <input type="hidden" id="hash" value="<?=$oBattleships->oBattleshipsGame->getPlayerHash()?>" />
+    <input type="hidden" id="playerNumber" value="<?=$oBattleships->oBattleshipsGame->getPlayerNumber()?>" />
 </body>
 </html>

@@ -135,6 +135,11 @@ div.log {
     display: none;
 }
 
+/* Random shot button only when game started */
+#random_shot {
+    display: none;
+}
+
 
 /* link for the opponent to join the game */
 #game_link {
