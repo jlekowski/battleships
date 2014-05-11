@@ -1,7 +1,11 @@
 <?php
+namespace Battleships\Game;
+
+use Battleships\DB;
+use Battleships\Misc;
 
 /**
- * Battleships class
+ * Battleships\Game\Manager class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.4
@@ -19,26 +23,25 @@
  *
  *
  */
-class Battleships
+class Manager
 {
-
     /**
-     * DB Class Object
+     * Battleships\DB Class Object
      *
-     * Example: object(PDO)#2 (0) { }
+     * Example: object(Battleships\DB)#2 (0) { }
      *
-     * @var DB
+     * @var Battleships\DB
      */
     protected $oDB;
 
     /**
-     * BattleshipsGame Class Object
+     * Battleships\Game\Data Class Object
      *
-     * Example: object(BattleshipsGame)#3 (16) { }
+     * Example: object(Battleships\Game\Data)#2 (20) { }
      *
-     * @var BattleshipsGame
+     * @var Battleships\Game\Data
      */
-    public $oBattleshipsGame;
+    public $oData;
 
     /**
      * Error variable
@@ -70,15 +73,14 @@ class Battleships
     /**
      * Initiates PDO Object and creates DB tables if required
      *
-     * @param BattleshipsGame $oBattleshipsGame
-     * @param DB $oDB
+     * @param Battleships\Game\Data $oData
+     * @param Battleships\DB $oDB
      * @return void
      */
-
-    public function __construct(BattleshipsGame $oBattleshipsGame, DB $oDB)
+    public function __construct(Data $oData, DB $oDB)
     {
         $this->oDB = $oDB;
-        $this->oBattleshipsGame = $oBattleshipsGame;
+        $this->oData = $oData;
 
         if ($this->doTablesExist() === false && is_null($this->getError())) {
             $this->createTables();
@@ -164,7 +166,7 @@ class Battleships
      * Initiates a game
      *
      * Either creates a new game or gets already created one if hash provided<br />
-     * Loads BattleshipsGame values
+     * Loads Battleships\Game\Data values
      *
      * @param string $hash Game hash
      *
@@ -178,41 +180,41 @@ class Battleships
             return false;
         }
 
-        $this->oBattleshipsGame->setIdGames($game['id']);
+        $this->oData->setIdGames($game['id']);
 
-        $events         = $this->getEvents(array("shot", "join_game", "start_game"));
-        $player_number  = $game['player_number'];
-        $other_number   = $player_number == 1 ? 2 : 1;
-        $player_prefix  = "player" . $player_number;
-        $other_prefix   = "player" . $other_number;
-        $shots          = array_key_exists('shot',         $events) ? $events['shot']        : array();
-        $joined         = array_key_exists('join_game',    $events) ? $events['join_game']   : array();
-        $started        = array_key_exists('start_game',   $events) ? $events['start_game']  : array();
-        $player_shots   = array_key_exists($player_number, $shots)  ? $shots[$player_number] : "";
-        $other_shots    = array_key_exists($other_number,  $shots)  ? $shots[$other_number]  : "";
-        $player_joined  = array_key_exists($player_number, $joined);
-        $other_joined   = array_key_exists($other_number,  $joined);
-        $player_started = array_key_exists($player_number, $started);
-        $other_started  = array_key_exists($other_number,  $started);
+        $events        = $this->getEvents(array("shot", "join_game", "start_game"));
+        $playerNumber  = $game['player_number'];
+        $otherNumber   = $playerNumber == 1 ? 2 : 1;
+        $playerPrefix  = "player" . $playerNumber;
+        $otherPrefix   = "player" . $otherNumber;
+        $shots         = array_key_exists('shot',        $events) ? $events['shot']       : array();
+        $joined        = array_key_exists('join_game',   $events) ? $events['join_game']  : array();
+        $started       = array_key_exists('start_game',  $events) ? $events['start_game'] : array();
+        $playerShots   = array_key_exists($playerNumber, $shots)  ? $shots[$playerNumber] : "";
+        $otherShots    = array_key_exists($otherNumber,  $shots)  ? $shots[$otherNumber]  : "";
+        $playerJoined  = array_key_exists($playerNumber, $joined);
+        $otherJoined   = array_key_exists($otherNumber,  $joined);
+        $playerStarted = array_key_exists($playerNumber, $started);
+        $otherStarted  = array_key_exists($otherNumber,  $started);
 
-        $this->oBattleshipsGame->setGameTimestamp($game['timestamp']);
-        $this->oBattleshipsGame->setPlayerNumber($player_number);
-        $this->oBattleshipsGame->setOtherNumber($other_number);
-        $this->oBattleshipsGame->setPlayerHash($game[$player_prefix.'_hash']);
-        $this->oBattleshipsGame->setOtherHash($game[$other_prefix.'_hash']);
-        $this->oBattleshipsGame->setPlayerName($game[$player_prefix.'_name']);
-        $this->oBattleshipsGame->setOtherName($game[$other_prefix.'_name']);
-        $this->oBattleshipsGame->setPlayerShips($game[$player_prefix.'_ships']);
-        $this->oBattleshipsGame->setOtherShips($game[$other_prefix.'_ships']);
-        $this->oBattleshipsGame->setPlayerShots($player_shots);
-        $this->oBattleshipsGame->setOtherShots($other_shots);
-        $this->oBattleshipsGame->setPlayerJoined($player_joined);
-        $this->oBattleshipsGame->setOtherJoined($other_joined);
-        $this->oBattleshipsGame->setPlayerStarted($player_started);
-        $this->oBattleshipsGame->setOtherStarted($other_started);
-        $this->oBattleshipsGame->setLastIdEvents($this->findLastIdEvents($other_number));
+        $this->oData->setGameTimestamp($game['timestamp']);
+        $this->oData->setPlayerNumber($playerNumber);
+        $this->oData->setOtherNumber($otherNumber);
+        $this->oData->setPlayerHash($game[$playerPrefix.'_hash']);
+        $this->oData->setOtherHash($game[$otherPrefix.'_hash']);
+        $this->oData->setPlayerName($game[$playerPrefix.'_name']);
+        $this->oData->setOtherName($game[$otherPrefix.'_name']);
+        $this->oData->setPlayerShips($game[$playerPrefix.'_ships']);
+        $this->oData->setOtherShips($game[$otherPrefix.'_ships']);
+        $this->oData->setPlayerShots($playerShots);
+        $this->oData->setOtherShots($otherShots);
+        $this->oData->setPlayerJoined($playerJoined);
+        $this->oData->setOtherJoined($otherJoined);
+        $this->oData->setPlayerStarted($playerStarted);
+        $this->oData->setOtherStarted($otherStarted);
+        $this->oData->setLastIdEvents($this->findLastIdEvents($otherNumber));
 
-        if (!$this->oBattleshipsGame->getPlayerJoined()) {
+        if (!$this->oData->getPlayerJoined()) {
             $this->joinGame();
         }
 
@@ -264,10 +266,11 @@ class Battleships
             'player2_hash'  => $temphash,
             'player2_name'  => "Player 2",
             'player2_ships' => "",
-            'timestamp'     => utc_time()
+            'timestamp'     => Misc::getUtcTime()->getTimestamp()
         );
 
-        $query = "INSERT INTO games (player1_hash, player1_name, player1_ships, player2_hash, player2_name, player2_ships, timestamp)
+        $query = "INSERT INTO games (player1_hash, player1_name, player1_ships,
+                                     player2_hash, player2_name, player2_ships, timestamp)
                   VALUES (?, ?, ?, ?, ?, ?, ?)";
         $result = $this->oDB->fQuery($query, array_values($game));
 
@@ -284,20 +287,20 @@ class Battleships
     /**
      * Updates player's name
      *
-     * @param string $player_name Player's new name
+     * @param string $playerName Player's new name
      *
      * @return bool Whether name was updated successfully
      */
-    public function updateName($player_name)
+    public function updateName($playerName)
     {
-        $query = sprintf("UPDATE games SET player%d_name = ? WHERE id = ?", $this->oBattleshipsGame->getPlayerNumber());
-        $result = $this->oDB->fQuery($query, array($player_name, $this->oBattleshipsGame->getIdGames()));
+        $query = sprintf("UPDATE games SET player%d_name = ? WHERE id = ?", $this->oData->getPlayerNumber());
+        $result = $this->oDB->fQuery($query, array($playerName, $this->oData->getIdGames()));
 
         if ($result === false) {
             return false;
         }
 
-        $this->addEvent('name_update', $player_name);
+        $this->addEvent('name_update', $playerName);
 
         return true;
     }
@@ -314,9 +317,9 @@ class Battleships
     {
         $query = "SELECT * FROM events WHERE id > ? AND game_id = ? AND player = ?";
         $result = $this->oDB->fQuery($query, array(
-            $this->oBattleshipsGame->getLastIdEvents(),
-            $this->oBattleshipsGame->getIdGames(),
-            $this->oBattleshipsGame->getOtherNumber()
+            $this->oData->getLastIdEvents(),
+            $this->oData->getIdGames(),
+            $this->oData->getOtherNumber()
         ));
 
         if ($result === false) {
@@ -324,36 +327,37 @@ class Battleships
         }
 
         $updates = array();
-        foreach ($result as $key => $value) {
+        foreach ($result as $value) {
             switch ($value['event_type']) {
                 case "name_update":
-                    $this->oBattleshipsGame->setOtherName($value['event_value']);
+                    $this->oData->setOtherName($value['event_value']);
                     break;
 
                 case "start_game":
-                    $this->oBattleshipsGame->setOtherShips($value['event_value']);
+                    $this->oData->setOtherShips($value['event_value']);
                     break;
 
                 case "shot":
-                    $this->oBattleshipsGame->appendOtherShots($value['event_value']);
+                    $this->oData->appendOtherShots($value['event_value']);
                     break;
             }
 
-            $lastIdEvents = max($this->oBattleshipsGame->getLastIdEvents(), $value['id']);
-            $this->oBattleshipsGame->setLastIdEvents($lastIdEvents);
+            $lastIdEvents = max($this->oData->getLastIdEvents(), $value['id']);
+            $this->oData->setLastIdEvents($lastIdEvents);
 
             if ($value['event_type'] == "chat") {
-                $event_value = array(
+                $eventDate = new \DateTime($value['timestamp']);
+                $eventValue = array(
                     'text' => $value['event_value'],
-                    'time' => date("Y-m-d H:i:s", $value['timestamp'] + $this->oBattleshipsGame->getTimezoneOffset())
+                    'time' => $eventDate->modify($this->oData->getTimezoneOffset() . "hour")->format("Y-m-d H:i:s")
                 );
-            } else if ($value['event_type'] == 'start_game') {
-                $event_value = true;
+            } elseif ($value['event_type'] == 'start_game') {
+                $eventValue = true;
             } else {
-                $event_value = $value['event_value'];
+                $eventValue = $value['event_value'];
             }
 
-            $updates[ $value['event_type'] ][] = $event_value;
+            $updates[ $value['event_type'] ][] = $eventValue;
             $updates['lastIdEvents'] = array($lastIdEvents);
         }
 
@@ -365,35 +369,41 @@ class Battleships
      *
      * Gets existing game from DB by hash
      *
-     * @param string $event_type Type of the event
-     * @param string $event_value Value of the event
+     * @param string $eventType Type of the event
+     * @param string $eventValue Value of the event
      *
      * @return bool Whether event was inserted successfully
      */
-    private function addEvent($event_type, $event_value = 1)
+    private function addEvent($eventType, $eventValue = 1)
     {
         $query = "INSERT INTO events (game_id, player, event_type, event_value, timestamp) VALUES (?, ?, ?, ?, ?)";
-        $result = $this->oDB->fQuery($query, array($this->oBattleshipsGame->getIdGames(), $this->oBattleshipsGame->getPlayerNumber(), $event_type, $event_value, utc_time()));
+        $result = $this->oDB->fQuery($query, array(
+            $this->oData->getIdGames(),
+            $this->oData->getPlayerNumber(),
+            $eventType,
+            $eventValue,
+            Misc::getUtcTime()->getTimestamp()
+        ));
 
         if ($result === false) {
             return false;
         }
 
-        switch ($event_type) {
+        switch ($eventType) {
             case 'name_update':
-                $this->oBattleshipsGame->setPlayerName($event_value);
+                $this->oData->setPlayerName($eventValue);
                 break;
 
             case 'join_game':
-                $this->oBattleshipsGame->setPlayerJoined($event_value);
+                $this->oData->setPlayerJoined($eventValue);
                 break;
 
             case 'start_game':
-                $this->oBattleshipsGame->setPlayerShips($event_value);
+                $this->oData->setPlayerShips($eventValue);
                 break;
 
             case 'shot':
-                $this->oBattleshipsGame->appendPlayerShots($event_value);
+                $this->oData->appendPlayerShots($eventValue);
                 break;
 
             default:
@@ -414,21 +424,21 @@ class Battleships
      */
     public function startGame($ships)
     {
-        if (!self::checkShips($ships) || count($this->oBattleshipsGame->getPlayerShips()) > 0) {
+        if (!self::checkShips($ships) || count($this->oData->getPlayerShips()) > 0) {
             return false;
         }
 
         // check whether all coordinates are correct (e.g. A1, B4, J10)
-        $ships_array = explode(",", $ships);
-        foreach ($ships_array as $coords) {
+        $shipsArray = explode(",", $ships);
+        foreach ($shipsArray as $coords) {
             if (self::coordsInfo($coords) === false) {
                 $this->setError("Ship's coordinates are incorrect (" . $coords . ")");
                 return false;
             }
         }
 
-        $query = sprintf("UPDATE games SET player%d_ships = ? WHERE id = ?", $this->oBattleshipsGame->getPlayerNumber());
-        $result = $this->oDB->fQuery($query, array($ships, $this->oBattleshipsGame->getIdGames()));
+        $query = sprintf("UPDATE games SET player%d_ships = ? WHERE id = ?", $this->oData->getPlayerNumber());
+        $result = $this->oDB->fQuery($query, array($ships, $this->oData->getIdGames()));
 
         if ($result === false) {
             return false;
@@ -455,12 +465,12 @@ class Battleships
             return false;
         }
 
-        if ($this->oBattleshipsGame->getOtherStarted() == false) {
+        if ($this->oData->getOtherStarted() == false) {
             $this->setError("Other player has not started yet");
             return false;
         }
 
-        if ($this->oBattleshipsGame->isMyTurn() == false) {
+        if ($this->oData->isMyTurn() == false) {
             $this->setError("It's other player's turn");
             return false;
         }
@@ -468,9 +478,9 @@ class Battleships
         $this->addEvent("shot", $coords);
 
         // If other ship at these coordinates (if hit)
-        if (array_search($coords, $this->oBattleshipsGame->getOtherShips()) === false) {
+        if (array_search($coords, $this->oData->getOtherShips()) === false) {
             $result = "miss";
-        } else if ($this->checkSunk($coords)) {
+        } elseif ($this->checkSunk($coords)) {
             // If other ship is sunk after this hit
             $result = "sunk";
         } else {
@@ -504,10 +514,10 @@ class Battleships
             return false;
         }
 
-        $check_sunk = true;
+        $checkSunk = true;
 
         // neighbour coordinates, taking into consideration edge positions (A and J rows, 1 and 10 columns)
-        $sunk_coords = array(
+        $sunkCoords = array(
             $coordsInfo['position_y'] > 0 ? self::$axisY[$coordsInfo['position_y'] - 1] . $coordsInfo['coord_x'] : "",
             $coordsInfo['position_y'] < 9 ? self::$axisY[$coordsInfo['position_y'] + 1] . $coordsInfo['coord_x'] : "",
             $coordsInfo['position_x'] < 9 ? $coordsInfo['coord_y'] . self::$axisX[$coordsInfo['position_x'] + 1] : "",
@@ -515,32 +525,33 @@ class Battleships
         );
 
         // try to find a mast which hasn't been hit
-        foreach ($sunk_coords as $key => $value) {
-            // if no coordinate on this side (end of the board) or direction is specified, but it's not the specified one
+        foreach ($sunkCoords as $key => $value) {
+            // if no coordinate on this side (end of the board) or direction is specified,
+            // but it's not the specified one
             if ($value === "" || ($direction !== null && $direction !== $key)) {
                 continue;
             }
 
-            $ships = $shooter == "player" ? $this->oBattleshipsGame->getOtherShips()  : $this->oBattleshipsGame->getPlayerShips();
-            $shots = $shooter == "player" ? $this->oBattleshipsGame->getPlayerShots() : $this->oBattleshipsGame->getOtherShots();
+            $ships = $shooter == "player" ? $this->oData->getOtherShips()  : $this->oData->getPlayerShips();
+            $shots = $shooter == "player" ? $this->oData->getPlayerShots() : $this->oData->getOtherShots();
             $ship = array_search($value, $ships);
             $shot = array_search($value, $shots);
 
             // if there's a mast there and it's been hit, check this direction for more masts
             if ($ship !== false && $shot !== false) {
-                $check_sunk = $this->checkSunk($value, $shooter, $key);
-            } else if ($ship !== false) {
+                $checkSunk = $this->checkSunk($value, $shooter, $key);
+            } elseif ($ship !== false) {
                 // if mast hasn't been hit, the the ship can't be sunk
-                $check_sunk = false;
+                $checkSunk = false;
             }
 
 
-            if ($check_sunk === false) {
+            if ($checkSunk === false) {
                 break;
             }
         }
 
-        return $check_sunk;
+        return $checkSunk;
     }
 
     /**
@@ -548,7 +559,7 @@ class Battleships
      *
      * Returns all shots for a requested game
      *
-     * @return array Shots for the game per player (Example: array(1 => array("A1", "B4", "J10"), 2 => array("C3", "F6", "I1"))
+     * @return array Shots for the game per player (Example: [1 => ["A1", "B4", "J10"], 2 => ["C3", "F6", "I1"]]
      */
     public function getShots()
     {
@@ -561,7 +572,8 @@ class Battleships
      *
      * Returns all chats for a requested game
      *
-     * @return array|false Chats for the game (Example: array(0 => array('name' => {player_name}, 'text' => "Hi!", 'time' => "2012-11-05 23:34"),  ...))
+     * @return array|false Chats for the game
+     *         (Example: [0 => ['name' => {player_name}, 'text' => "Hi!", 'time' => "2012-11-05 23:34"],  ...])
      */
     public function getChats()
     {
@@ -574,12 +586,13 @@ class Battleships
 
         // raw events result requested to build a custom array with chats' details
         foreach ($result as $value) {
+            $eventDate = new \DateTime($value['timestamp']);
             $chats[] = array(
-                'name' => ($value['player'] == $this->oBattleshipsGame->getPlayerNumber()
-                    ? $this->oBattleshipsGame->getPlayerName()
-                    : $this->oBattleshipsGame->getOtherName()),
+                'name' => ($value['player'] == $this->oData->getPlayerNumber()
+                    ? $this->oData->getPlayerName()
+                    : $this->oData->getOtherName()),
                 'text' => $value['event_value'],
-                'time' => date("Y-m-d H:i:s", $value['timestamp'] + $this->oBattleshipsGame->getTimezoneOffset())
+                'time' => $eventDate->modify($this->oData->getTimezoneOffset() . "hour")->format("Y-m-d H:i:s")
             );
         }
 
@@ -593,15 +606,16 @@ class Battleships
      * If not $event_type provided, returns all events.
      * If $raw no specified, groups results by event type and player number.
      *
-     * @param string|array $event_type Types of events to be returned (all if not/null provided)
+     * @param string|array $eventType Types of events to be returned (all if not/null provided)
      * @param bool $raw Whether to return a query result or group the result by even_type and player_number
      *
-     * @return array|false Events for the game (Example: array('chat' => array(1 => array(0 => "Hi!", 2 => ...), 'shot' => array(1 => array(0 => "A1", ...), ...)
+     * @return array|false Events for the game
+     *         (Example: ['chat' => [1 => [0 => "Hi!", 2 => ...], 'shot' => [1 => array[0 => "A1", ...], ...]
      */
-    private function getEvents($event_type, $raw = false)
+    private function getEvents($eventType, $raw = false)
     {
         $query = "SELECT * FROM events WHERE game_id = ? AND event_type IN (:event_types)";
-        $result = $this->oDB->fQuery($query, array($this->oBattleshipsGame->getIdGames(), ':event_types' => $event_type));
+        $result = $this->oDB->fQuery($query, array($this->oData->getIdGames(), ':event_types' => $eventType));
 
         if ($raw || $result === false) {
             return $result;
@@ -628,7 +642,7 @@ class Battleships
     private function findLastIdEvents($player)
     {
         $query = "SELECT MAX(id) AS id FROM events WHERE game_id = ? AND player = ? GROUP BY game_id";
-        $result = $this->oDB->getFirst($query, array($this->oBattleshipsGame->getIdGames(), $player));
+        $result = $this->oDB->getFirst($query, array($this->oData->getIdGames(), $player));
 
         if ($result === false) {
             return false;
@@ -638,15 +652,12 @@ class Battleships
     }
 
     /**
-     * Gets the current battle run and player's ships
+     * Get the current battle record (players' battlegrounds)
      *
-     * Returns the battle run and player ships' coordinates based on players' shots, grouping by player and shot with the shot result.
+     * Example: <br />
+     * ['playerGround' => ['A1' => "miss", 'C4' => "hit", ...], 'otherGround' => ['J10' => "sunk", ...]]
      *
-     * Example: array('player_ships' => array("J10", "F5", ...),<br />
-     *    'player_shots' => array('A1' => "miss", 'C4' => "hit", ...),<br />
-     *    'other_shots' => array('J10' => "sunk", ...))
-     *
-     * @return array Battle run and players' ships
+     * @return array
      */
     public function getBattle()
     {
@@ -654,20 +665,20 @@ class Battleships
         $prefixes = array(array("player", "other"), array("other", "player"));
 
         $ships = array(
-            'player' => $this->oBattleshipsGame->getPlayerShips(),
-            'other'  => $this->oBattleshipsGame->getOtherShips()
+            'player' => $this->oData->getPlayerShips(),
+            'other'  => $this->oData->getOtherShips()
         );
 
         $shots = array(
-            'player' => $this->oBattleshipsGame->getPlayerShots(),
-            'other'  => $this->oBattleshipsGame->getOtherShots()
+            'player' => $this->oData->getPlayerShots(),
+            'other'  => $this->oData->getOtherShots()
         );
 
         foreach ($prefixes as $prefix) {
             foreach ($shots[ $prefix[0] ] as $value) {
                 if (array_search($value, $ships[ $prefix[1] ]) === false) {
                     $shot = "miss";
-                } else if ($this->checkSunk($value, $prefix[0])) {
+                } elseif ($this->checkSunk($value, $prefix[0])) {
                     $shot = "sunk";
                 } else {
                     $shot = "hit";
@@ -748,22 +759,22 @@ class Battleships
             return false;
         }
 
-        $coord_y    = $coords[0];
-        $coord_x    = substr($coords, 1);
+        $coordY    = $coords[0];
+        $coordX    = substr($coords, 1);
 
-        $position_y = array_search($coord_y, self::$axisY);
-        $position_x = array_search($coord_x, self::$axisX);
+        $positionY = array_search($coordY, self::$axisY);
+        $positionX = array_search($coordX, self::$axisX);
 
-        if ($position_y === false || $position_x === false) {
+        if ($positionY === false || $positionX === false) {
             return false;
         }
 
 
         $coordsInfo = array(
-            'coord_y'    => $coord_y,
-            'coord_x'    => $coord_x,
-            'position_y' => $position_y,
-            'position_x' => $position_x
+            'coord_y'    => $coordY,
+            'coord_x'    => $coordX,
+            'position_y' => $positionY,
+            'position_x' => $positionX
         );
 
         return $coordsInfo;
@@ -772,7 +783,8 @@ class Battleships
     /**
      * Checks if ships are set correctly
      *
-     * Validates coordinates of all ships' masts, checks the number, sizes and shapes of the ships, and potential edge connections between them.
+     * Validates coordinates of all ships' masts, checks the number,
+     *     sizes and shapes of the ships, and potential edge connections between them.
      *
      * @param string $ships Ships set by the player (Example: "A1,B4,J10,...")
      *
@@ -781,36 +793,38 @@ class Battleships
     public static function checkShips($ships)
     {
         // converts all coordinates to indexes and sorts them for more efficient validation
-        $ships_array = array_map("self::toIndex", explode(",", $ships));
-        sort($ships_array);
+        $shipsArray = array_map("self::toIndex", explode(",", $ships));
+        sort($shipsArray);
 
         // required number of masts
-        $ships_length = 20;
+        $shipsLength = 20;
         // sizes of ships to be count
-        $ships_types  = array(1 => 0, 2 => 0, 3 => 0, 4 => 0);
+        $shipsTypes  = array(1 => 0, 2 => 0, 3 => 0, 4 => 0);
         // B3 (index 12), going 2 down and 3 left is D6 (index 35), so 12 + (2 * 10) + (3 * 1) = 35
-        $direction_multipliers = array(1, 10);
+        $directionMultipliers = array(1, 10);
 
         // if the number of masts is correct
-        if (count($ships_array) != $ships_length) {
+        if (count($shipsArray) != $shipsLength) {
             return false;
         }
 
 
         // check if no edge connection
-        foreach ($ships_array as $key => $index) {
+        foreach ($shipsArray as $key => $index) {
             if ($index[0] == 9) {
                 continue;
             }
 
             // Enough to check one side corners, because I check all masts.
             // Checking right is more efficient because masts are sorted from the top left corner
-            // B3 (index 12), upper right corner is A4 (index 03), so 12 - 3 = 9 - second digit 0 is first row, so no upper corner
-            $upper_right_corner = ($index[1] > 0) && (in_array($index + 9, $ships_array));
-            // B3 (index 12), lower right corner is C4 (index 23), so 23 - 12 = 11 - second digit 9 is last row, so no lower corner
-            $lower_right_corner = ($index[1] < 9) && (in_array($index + 11, $ships_array));
+            // B3 (index 12), upper right corner is A4 (index 03), so 12 - 3 = 9 -
+            // second digit 0 is first row, so no upper corner
+            $upperRightCorner = ($index[1] > 0) && (in_array($index + 9, $shipsArray));
+            // B3 (index 12), lower right corner is C4 (index 23), so 23 - 12 = 11 -
+            // second digit 9 is last row, so no lower corner
+            $lowerRightCorner = ($index[1] < 9) && (in_array($index + 11, $shipsArray));
 
-            if ($upper_right_corner || $lower_right_corner) {
+            if ($upperRightCorner || $lowerRightCorner) {
                 return false;
             }
         }
@@ -818,48 +832,48 @@ class Battleships
         $masts = array();
 
         // check if there are the right types of ships
-        foreach ($ships_array as $key => $index) {
+        foreach ($shipsArray as $key => $index) {
             // we ignore masts which have already been marked as a part of a ship
             if (array_key_exists($index, $masts)) {
                 continue;
             }
 
-            foreach ($direction_multipliers as $k => $multiplier) {
-                $axis_index   = $k == 1 ? 0 : 1;
-                $board_offset = $index[$axis_index];
+            foreach ($directionMultipliers as $k => $multiplier) {
+                $axisIndex   = $k == 1 ? 0 : 1;
+                $boardOffset = $index[$axisIndex];
 
-                $ship_type = 1;
+                $shipType = 1;
                 // check for masts until the battleground border is reached
-                while ($board_offset + $ship_type <= 9) {
-                    $check_index = sprintf("%02s", $index + ($ship_type * $multiplier));
+                while ($boardOffset + $shipType <= 9) {
+                    $checkIndex = sprintf("%02s", $index + ($shipType * $multiplier));
 
                     // no more masts
-                    if (!in_array($check_index, $ships_array)) {
+                    if (!in_array($checkIndex, $shipsArray)) {
                         break;
                     }
 
                     // mark the mast as already checked
-                    $masts[$check_index] = true;
+                    $masts[$checkIndex] = true;
 
                     // ship is too long
-                    if (++$ship_type > 4) {
+                    if (++$shipType > 4) {
                         return false;
                     }
                 }
 
                 // if not masts found and more directions to check
-                if (($ship_type == 1) && ($k + 1 != count($direction_multipliers))) {
+                if (($shipType == 1) && ($k + 1 != count($directionMultipliers))) {
                     continue;
                 }
 
                 break; // either all (both) directions checked or the ship is found
             }
 
-            $ships_types[$ship_type]++;
+            $shipsTypes[$shipType]++;
         }
 
         // whether the number of different ship types is correct
-        $diff = array_diff_assoc($ships_types, array(1 => 4, 2 => 3, 3 => 2, 4 => 1));
+        $diff = array_diff_assoc($shipsTypes, array(1 => 4, 2 => 3, 3 => 2, 4 => 1));
         if (!empty($diff)) {
             return false;
         }
@@ -874,8 +888,9 @@ class Battleships
      */
     private function determineWhoseTurn()
     {
-        $query = "SELECT player, event_value FROM events WHERE game_id = ? AND event_type = 'shot' ORDER BY id DESC LIMIT 1";
-        $result = $this->oDB->getFirst($query, array($this->oBattleshipsGame->getIdGames()));
+        $query = "SELECT player, event_value FROM events
+                  WHERE game_id = ? AND event_type = 'shot' ORDER BY id DESC LIMIT 1";
+        $result = $this->oDB->getFirst($query, array($this->oData->getIdGames()));
 
         if ($result === false) {
             return false;
@@ -883,15 +898,15 @@ class Battleships
 
         if (empty($result)) {
             $whoseTurn = 1;
-        } else if ($result['player'] == $this->oBattleshipsGame->getPlayerNumber()) {
-            $whoseTurn = in_array($result['event_value'], $this->oBattleshipsGame->getOtherShips())
-                ? $this->oBattleshipsGame->getPlayerNumber() : $this->oBattleshipsGame->getOtherNumber();
+        } elseif ($result['player'] == $this->oData->getPlayerNumber()) {
+            $whoseTurn = in_array($result['event_value'], $this->oData->getOtherShips())
+                ? $this->oData->getPlayerNumber() : $this->oData->getOtherNumber();
         } else {
-            $whoseTurn = in_array($result['event_value'], $this->oBattleshipsGame->getPlayerShips())
-                ? $this->oBattleshipsGame->getOtherNumber() : $this->oBattleshipsGame->getPlayerNumber();
+            $whoseTurn = in_array($result['event_value'], $this->oData->getPlayerShips())
+                ? $this->oData->getOtherNumber() : $this->oData->getPlayerNumber();
         }
 
-        $this->oBattleshipsGame->setWhoseTurn($whoseTurn);
+        $this->oData->setWhoseTurn($whoseTurn);
 
         return true;
     }
@@ -915,7 +930,7 @@ class Battleships
             for ($j = 0; $j < 11; $j++) {
                 if ($i == 0 && $j > 0) {
                     $text = self::$axisY[($j - 1)];
-                } else if ($j == 0 && $i > 0) {
+                } elseif ($j == 0 && $i > 0) {
                     $text = self::$axisX[($i - 1)];
                 } else {
                     $text = "";

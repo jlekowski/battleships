@@ -13,14 +13,18 @@
  *
  */
 
-require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "config" . DIRECTORY_SEPARATOR . "config.php";
-require_once INCLUDE_PATH . "functions.php";
+require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "init" . DIRECTORY_SEPARATOR . "bootstrap.php";
 
-// initiate Battleships object
+use Battleships\DB;
+use Battleships\Game\Data;
+use Battleships\Game\Manager;
+use Battleships\Misc;
+
+// initiate Battleships objects
 $oDB = new DB(DB_TYPE);
-$oBattleshipsGame = new BattleshipsGame();
-$oBattleships = new Battleships($oBattleshipsGame, $oDB);
-$error = $oBattleships->getError();
+$oData = new Data();
+$oManager = new Manager($oData, $oDB);
+$error = $oManager->getError();
 
 if ($error !== null) {
     echo $error;
@@ -30,20 +34,20 @@ if ($error !== null) {
 
 // if no hash provided initiate a game and redirect to the game's hash
 if (!array_key_exists('hash', $_GET)) {
-    $game_initiate = $oBattleships->initGame();
-    if ($game_initiate === false) {
-        echo $oBattleships->getError();
+    $gameInitiated = $oManager->initGame();
+    if ($gameInitiated === false) {
+        echo $oManager->getError();
         exit;
     }
 
-    header("Location: " . $_SERVER['SCRIPT_URI'] . "?hash=" . $oBattleships->oBattleshipsGame->getPlayerHash(), 303);
+    header("Location: " . $_SERVER['SCRIPT_URI'] . "?hash=" . $oManager->oData->getPlayerHash(), 303);
     exit;
 }
 
 // initiate the game and throw error when hash is incorrect
-$game_initiate = $oBattleships->initGame($_GET['hash']);
-if ($game_initiate === false) {
-    echo $oBattleships->getError() . "<br />Refresh or try to <a href='" . $_SERVER['SCRIPT_URI'] . "'>start a new game</a>.";
+$gameInitiated = $oManager->initGame($_GET['hash']);
+if ($gameInitiated === false) {
+    echo $oManager->getError() . "<br />Refresh or try to <a href='" . $_SERVER['SCRIPT_URI'] . "'>start a new game</a>.";
     exit;
 }
 
@@ -61,13 +65,13 @@ if ($game_initiate === false) {
 </head>
 <body>
 <?php
-if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
-    $direct_sqlite_file = get_sqlite_url();
+if (!Misc::isRootDir() && (SQLITE_FILE == "battleships.sqlite")) {
+    $sqliteUrl = Misc::getSqliteUrl();
 ?>
     <div class="warning" style="width: 968px;">
         Game is not open in root directory and SQLITE_FILE has default set "<?=SQLITE_FILE?>" and
         is available directly!<br />
-        <a href="<?=$direct_sqlite_file?>"><?=$direct_sqlite_file?></a><br />
+        <a href="<?=$sqliteUrl?>"><?=$sqliteUrl?></a><br />
         Set root URL for public directory or change SQLITE_FILE in config.php to a random one <br />
         (e.g. "<?=hash("sha256", uniqid(mt_rand(), true))?>.sqlite") and delete current file.
     </div>
@@ -75,7 +79,7 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
 }
 ?>
     <div class="menu">
-        Game No. <?=$oBattleships->oBattleshipsGame->getIdGames()?>
+        Game No. <?=$oManager->oData->getIdGames()?>
         <button id="start">Start</button>
         <button id="update">Updates [OFF]</button>
         <button id="new_game">New Game</button>
@@ -84,25 +88,27 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
     </div>
     <div class="board_container">
         <div class="board_menu">
-            <input type="text" value="<?=$oBattleships->oBattleshipsGame->getPlayerName()?>" />
-            <span id="name_update"><?=escape_string($oBattleships->oBattleshipsGame->getPlayerName())?></span>
+            <input type="text" value="<?=$oManager->oData->getPlayerName()?>" />
+            <span id="name_update"><?=Misc::escapeString($oManager->oData->getPlayerName())?></span>
         </div>
-<?=Battleships::createBoard()?>
+<?=Manager::createBoard()?>
     </div>
     <div class="board_container">
         <div class="board_menu">
-            <span><?=escape_string($oBattleships->oBattleshipsGame->getOtherName())?></span>
+            <span><?=Misc::escapeString($oManager->oData->getOtherName())?></span>
         </div>
-<?=Battleships::createBoard()?>
+<?=Manager::createBoard()?>
     </div>
     <div class="log"></div>
 
     <p id="game_link">
 <?php
-    if ($oBattleships->oBattleshipsGame->getPlayerNumber() == 1 && $oBattleships->oBattleshipsGame->getOtherJoined() === false) {
-        echo "Temporary link to the game for the oponent: <span>" . $_SERVER['SCRIPT_URI']
-            . "?hash=" . $oBattleships->oBattleshipsGame->getOtherHash() . "</span>";
-    }
+if ($oManager->oData->getPlayerNumber() == 1 && $oManager->oData->getOtherJoined() === false) {
+?>
+    Temporary link to the game for the opponent:
+    <span><?=$_SERVER['SCRIPT_URI']?>?hash=<?=$oManager->oData->getOtherHash()?></span>
+<?php
+}
 ?>
     </p>
 
@@ -114,7 +120,7 @@ if (!is_root_dir() && (SQLITE_FILE == "battleships.sqlite")) {
         </div>
     </div>
 
-    <input type="hidden" id="hash" value="<?=$oBattleships->oBattleshipsGame->getPlayerHash()?>" />
-    <input type="hidden" id="playerNumber" value="<?=$oBattleships->oBattleshipsGame->getPlayerNumber()?>" />
+    <input type="hidden" id="hash" value="<?=$oManager->oData->getPlayerHash()?>" />
+    <input type="hidden" id="playerNumber" value="<?=$oManager->oData->getPlayerNumber()?>" />
 </body>
 </html>

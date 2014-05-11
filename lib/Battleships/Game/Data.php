@@ -1,7 +1,8 @@
 <?php
+namespace Battleships\Game;
 
 /**
- * BattleshipsGame class
+ * Battleships\Game\Data class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.4
@@ -9,9 +10,9 @@
  * @since      File available since Release 0.3
  *
  */
-class BattleshipsGame
+class Data
 {
-
+    public $battle;
     private $idGames = 0;
     private $gameTimestamp;
     private $playerNumber;
@@ -31,18 +32,17 @@ class BattleshipsGame
     private $lastIdEvents = 0;
     private $timezoneOffset = 0;
     private $whoseTurn;
-    public  $battle;
 
-    public function __construct(stdClass $game = null)
+    public function __construct(\stdClass $game = null)
     {
         if (!$game) {
             return;
         }
 
-        $properties = get_class_vars(get_class());
-        foreach ($properties as $key => $value) {
-            if (property_exists($game, $key)) {
-                $this->$key = $game->$key;
+        $properties = array_keys(get_class_vars(__CLASS__));
+        foreach ($properties as $property) {
+            if (property_exists($game, $property)) {
+                $this->$property = $game->$property;
             }
         }
     }

@@ -633,8 +633,8 @@ function get_node_value(node) {
     var xsiAttributes = get_node_xsi_attributes(node);
 
     if ($.inArray(nodeText, ["true", "false", "null"]) != -1
-        || xsiAttributes.type && xsiAttributes.type[1] == "boolean")
-    {
+        || xsiAttributes.type && xsiAttributes.type[1] == "boolean"
+    ) {
         nodeValue = eval(nodeText);
     } else if (xsiAttributes.nil) {
         nodeValue = null;
@@ -847,7 +847,7 @@ function random_ships(event) {
         for (var j = 0; j < i; j++) {
             var orientation = orientations[ Math.floor(Math.random() * orientations.length) ];
             mark_restricted_starts(masts, orientation);
-            var $startFields = $battleground.board(0).not(".restricted")
+            var $startFields = $battleground.board(0).not(".restricted");
 
             var index = Math.floor(Math.random() * $startFields.length);
             var idx = $battleground.index( $startFields.eq(index) );
@@ -933,7 +933,7 @@ function mark_restricted_starts(masts, orientation) {
     }
 
     if (orientation == 0) {
-        $battleground.board(0).filter('div:nth-child(n+' + (13 - masts) + ')').addClass("restricted")
+        $battleground.board(0).filter('div:nth-child(n+' + (13 - masts) + ')').addClass("restricted");
     } else {
         $battleground.board(0).slice((11 - masts) * 10).addClass("restricted");
     }

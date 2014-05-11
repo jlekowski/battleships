@@ -1,7 +1,7 @@
 <?php
 
 /**
- * client for PHP CLI
+ * Client for PHP CLI
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.4
@@ -10,9 +10,11 @@
  *
  */
 
-require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "config" . DIRECTORY_SEPARATOR . "config.php";
-require_once INCLUDE_PATH . "functions.php";
+require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "init" . DIRECTORY_SEPARATOR . "bootstrap.php";
 
-$oBattleshipsClient = new BattleshipsClient();
-$oBattleshipsCliInterface = new BattleshipsCliInterface($oBattleshipsClient);
-$oBattleshipsCliInterface->run();
+use Battleships\Soap\Client;
+use Battleships\CliInterface;
+
+$oClient = new Client();
+$oCliInterface = new CliInterface($oClient);
+$oCliInterface->run();

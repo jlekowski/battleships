@@ -2,9 +2,7 @@
 
 ## Battleships (sea battle) game for web and command line (PHP CLI)
 
-This is a playable beta version of Battleships.
-
-App is by default set in dev/debug mode for long calls (which might not work well on some of shared hosting).
+App is by default set in dev/debug mode for long calls (see **Setup** section) which might not work well on some of shared hosting.
 
 ### DEMO
 http://dev.lekowski.pl/
@@ -17,12 +15,12 @@ php bin/client.php
 2. Copy to your web server directory (advised to point domain to public folder)
  * You might need to add writing permission to db\ directory (chmod 777)
  * You might need to add writing permission to log\ directory (chmod 777)
- * You might need change to short calls (see setup paragraph)
+ * You might need change to short calls (see **Setup** section)
 3. Enter the URL and enjoy the game
 
 ## === Setup ===
 
-#### config/config.php
+#### init/config.php
 * SQLITE_FILE
  * change to a random name if your db folder is accessible through the browser
 * CHECK_UPDATES_TIMEOUT

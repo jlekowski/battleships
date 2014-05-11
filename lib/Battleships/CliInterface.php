@@ -1,7 +1,11 @@
 <?php
+namespace Battleships;
+
+use Battleships\Soap\Client;
+use Battleships\Game\Manager;
 
 /**
- * BattleshipsCliInterface class
+ * Battleships\CliInterface class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.4
@@ -9,15 +13,16 @@
  * @since      File available since Release 0.3
  *
  */
-class BattleshipsCliInterface
+class CliInterface
 {
     private $outputs = array();
-    private $oBattleshipsGame;
+    private $oClient;
+    private $oData;
     private $runInterface;
 
-    public function __construct(BattleshipsClient $oBattleshipsClient)
+    public function __construct(Client $oClient)
     {
-        $this->oBattleshipsClient = $oBattleshipsClient;
+        $this->oClient = $oClient;
     }
 
     public function run()
@@ -26,11 +31,11 @@ class BattleshipsCliInterface
         while ($this->runInterface) {
             $command = "";
 
-            if (empty($this->oBattleshipsGame)) {
+            if (empty($this->oData)) {
                 $command = "initGame";
-            } else if (count($this->oBattleshipsGame->getPlayerShips()) == 0) {
+            } elseif (count($this->oData->getPlayerShips()) == 0) {
                 $command = "startGame";
-            } else if ($this->oBattleshipsGame->getOtherStarted() && $this->oBattleshipsGame->isMyTurn()) {
+            } elseif ($this->oData->getOtherStarted() && $this->oData->isMyTurn()) {
                 $command = "addShot";
             } else {
                 $command = "update";
@@ -100,23 +105,23 @@ class BattleshipsCliInterface
     private function runCommandNameUpdate()
     {
         $playerName = $this->getInput("What's your name?");
-        $this->oBattleshipsClient->updateName($this->oBattleshipsGame, $playerName);
+        $this->oClient->updateName($this->oData, $playerName);
         $this->runCommandShow();
     }
 
     private function runCommandInitGame()
     {
         $hash = $this->getInput("Provide game hash or press ENTER to start a new game");
-        $this->oBattleshipsGame = $this->oBattleshipsClient->getGame($hash);
+        $this->oData = $this->oClient->getGame($hash);
         $this->runCommandShow();
 
         if (!$hash) {
-            $output = $this->oBattleshipsGame->getPlayerName() . " hash is: " . $this->oBattleshipsGame->getPlayerHash();
+            $output = $this->oData->getPlayerName() . " hash is: " . $this->oData->getPlayerHash();
             $this->outputsAppend($output);
         }
 
-        if ($this->oBattleshipsGame->getOtherHash()) {
-            $output = $this->oBattleshipsGame->getOtherName() . " hash is: " . $this->oBattleshipsGame->getOtherHash();
+        if ($this->oData->getOtherHash()) {
+            $output = $this->oData->getOtherName() . " hash is: " . $this->oData->getOtherHash();
             $this->outputsAppend($output);
         }
     }
@@ -124,7 +129,7 @@ class BattleshipsCliInterface
     private function runCommandStartGame()
     {
         $ships = strtoupper($this->getInput("Set your ships"));
-        $result = $this->oBattleshipsClient->startGame($this->oBattleshipsGame, $ships);
+        $result = $this->oClient->startGame($this->oData, $ships);
         $this->runCommandShow();
         if (!$result) {
             $output = "Ships set incorrectly";
@@ -135,7 +140,7 @@ class BattleshipsCliInterface
     private function runCommandAddShot()
     {
         $shot = strtoupper($this->getInput("Shoot"));
-        $result = $this->oBattleshipsClient->addShot($this->oBattleshipsGame, $shot);
+        $result = $this->oClient->addShot($this->oData, $shot);
         $this->runCommandShow();
         $output = $result ? $shot . ": " . $result : "Incorrect shot";
         $this->outputsAppend($output);
@@ -143,11 +148,11 @@ class BattleshipsCliInterface
 
     private function runCommandUpdate()
     {
-        $oldOtherName = $this->oBattleshipsGame->getOtherName();
+        $oldOtherName = $this->oData->getOtherName();
         echo PHP_EOL . "Waiting for " . $oldOtherName . "...";
 
         do {
-            $result = $this->oBattleshipsClient->getUpdates($this->oBattleshipsGame);
+            $result = $this->oClient->getUpdates($this->oData);
             echo ".";
         } while ($result == false);
 
@@ -156,22 +161,22 @@ class BattleshipsCliInterface
             foreach ($updates as $update) {
                 switch ($action) {
                     case "name_update":
-                        $output = $oldOtherName . " changed name to: " . $this->oBattleshipsGame->getOtherName();
+                        $output = $oldOtherName . " changed name to: " . $this->oData->getOtherName();
                         $this->outputsAppend($output);
                         break;
 
                     case "start_game":
-                        $output = $this->oBattleshipsGame->getOtherName() . " started the game";
+                        $output = $this->oData->getOtherName() . " started the game";
                         $this->outputsAppend($output);
                         break;
 
                     case "join_game":
-                        $output = $this->oBattleshipsGame->getOtherName() . " joined the game";
+                        $output = $this->oData->getOtherName() . " joined the game";
                         $this->outputsAppend($output);
                         break;
 
                     case "shot":
-                        $output = $this->oBattleshipsGame->getOtherName() . " shot " . $update;
+                        $output = $this->oData->getOtherName() . " shot " . $update;
                         $this->outputsAppend($output);
                         break;
 
@@ -185,8 +190,12 @@ class BattleshipsCliInterface
     private function showBattlegroud()
     {
         $marks = array('ship' => "S", 'miss' => ".", 'hit' => "x", 'sunk' => "X");
-        $battle = $this->oBattleshipsGame->battle;
-        $board  = sprintf("\n     % 39.39s        % 39.39s \n\n", $this->oBattleshipsGame->getPlayerName(), $this->oBattleshipsGame->getOtherName());
+        $battle = $this->oData->battle;
+        $board  = sprintf(
+            "\n     % 39.39s        % 39.39s \n\n",
+            $this->oData->getPlayerName(),
+            $this->oData->getOtherName()
+        );
         $board .= "    ";
 
         // 11 rows (first row for X axis labels)
@@ -194,14 +203,16 @@ class BattleshipsCliInterface
             // 11 divs/columns in each row (first column for Y axis labels)
             for ($j = 0; $j < 11; $j++) {
                 if ($i == 0 && $j > 0) {
-                    $text = Battleships::$axisY[($j - 1)];
+                    $text = Manager::$axisY[($j - 1)];
                     $board .= sprintf(" % 2s ", $text);
-                } else if ($j == 0 && $i > 0) {
-                    $text = Battleships::$axisX[($i - 1)];
+                } elseif ($j == 0 && $i > 0) {
+                    $text = Manager::$axisX[($i - 1)];
                     $board .= sprintf(" % 2s |", $text);
-                } else if ($j > 0 && $i > 0) {
-                    $coords = Battleships::$axisY[($j - 1)] . Battleships::$axisX[($i - 1)];
-                    $text = array_key_exists($coords, $battle['playerGround']) ? $marks[ $battle['playerGround'][$coords] ] : "";
+                } elseif ($j > 0 && $i > 0) {
+                    $coords = Manager::$axisY[($j - 1)] . Manager::$axisX[($i - 1)];
+                    $text = array_key_exists($coords, $battle['playerGround'])
+                        ? $marks[ $battle['playerGround'][$coords] ]
+                        : "";
                     $board .= sprintf(" % 1s |", $text);
                 }
             }
@@ -212,14 +223,16 @@ class BattleshipsCliInterface
                     if ($j == 1) {
                         $board .= "     ";
                     }
-                    $text = Battleships::$axisY[($j - 1)];
+                    $text = Manager::$axisY[($j - 1)];
                     $board .= sprintf(" % 2s ", $text);
-                } else if ($j == 0 && $i > 0) {
-                    $text = Battleships::$axisX[($i - 1)];
+                } elseif ($j == 0 && $i > 0) {
+                    $text = Manager::$axisX[($i - 1)];
                     $board .= sprintf(" % 2s |", $text);
-                } else if ($j > 0 && $i > 0) {
-                    $coords = Battleships::$axisY[($j - 1)].Battleships::$axisX[($i - 1)];
-                    $text = array_key_exists($coords, $battle['otherGround']) ? $marks[ $battle['otherGround'][$coords] ] : "";
+                } elseif ($j > 0 && $i > 0) {
+                    $coords = Manager::$axisY[($j - 1)].Manager::$axisX[($i - 1)];
+                    $text = array_key_exists($coords, $battle['otherGround'])
+                        ? $marks[ $battle['otherGround'][$coords] ]
+                        : "";
                     $board .= sprintf(" % 1s |", $text);
                 }
             }

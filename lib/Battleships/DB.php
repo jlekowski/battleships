@@ -1,4 +1,5 @@
 <?php
+namespace Battleships;
 
 /**
  * Database class
@@ -9,7 +10,7 @@
  * @since      File available since Release 0.3
  *
  */
-class DB extends PDO
+class DB extends \PDO
 {
     /**
      * PDO Statement Object
@@ -47,8 +48,10 @@ class DB extends PDO
      */
     public function __construct($dbType)
     {
+        $this->dbType = $dbType;
+
         try {
-            switch ($dbType) {
+            switch ($this->dbType) {
                 case "SQLITE":
                     parent::__construct("sqlite:" . SQLITE_PATH . SQLITE_FILE);
                     break;
@@ -58,12 +61,10 @@ class DB extends PDO
                     break;
 
                 default:
-                    throw new Exception("Correct DB type is missing (" . $dbType .")");
+                    throw new \Exception("Correct DB type is missing (" . $dbType .")");
             }
-
-            $this->dbType = $dbType;
-        } catch (Exception $e) {
-            error_log($e->getMessage());
+        } catch (\Exception $e) {
+            Misc::log($e->getMessage());
             exit('Database error occurred');
         }
     }
@@ -77,7 +78,7 @@ class DB extends PDO
     {
         if ($this->isErrorCode($this->errorCode())) {
             $error = implode(" | ", $this->errorInfo());
-        } else if ($this->sth instanceof PDOStatement && $this->isErrorCode($this->sth->errorCode())) {
+        } elseif ($this->sth instanceof \PDOStatement && $this->isErrorCode($this->sth->errorCode())) {
             $error = implode(" | ", $this->sth->errorInfo());
         } else {
             $error = $this->error;
@@ -136,7 +137,7 @@ class DB extends PDO
             return false;
         }
 
-        return $result->fetchall(PDO::FETCH_ASSOC);
+        return $result->fetchall(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -148,7 +149,7 @@ class DB extends PDO
      */
     public function prepare($query)
     {
-        $this->sth = parent::prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));
+        $this->sth = parent::prepare($query, array(\PDO::ATTR_CURSOR => \PDO::CURSOR_FWDONLY));
 
         if ($this->sth === false) {
             return false;
@@ -172,7 +173,7 @@ class DB extends PDO
             return false;
         }
 
-        return $this->sth->fetchAll(PDO::FETCH_ASSOC);
+        return $this->sth->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -187,7 +188,8 @@ class DB extends PDO
      */
     public function fQuery($query, $parameters)
     {
-        // if array is multidimensional, i.e. an array is used for IN clause - otherwise simple prepare and execute in one method
+        // if array is multidimensional, i.e. an array is used for IN clause -
+        // otherwise simple prepare and execute in one method
         if (count($parameters) != count($parameters, COUNT_RECURSIVE)) {
             foreach ($parameters as $key => $value) {
                 // values must be reorganised only for array values
