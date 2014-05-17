@@ -20,6 +20,9 @@ class Server
      */
     private $oManager;
 
+    /**
+     * @param \Battleships\Game\Manager $oManager
+     */
     public function __construct(Manager $oManager)
     {
         $this->oManager = $oManager;

@@ -346,7 +346,7 @@ class Manager
             $this->oData->setLastIdEvents($lastIdEvents);
 
             if ($value['event_type'] == "chat") {
-                $eventDate = new \DateTime($value['timestamp']);
+                $eventDate = new \DateTime("@" . $value['timestamp']);
                 $eventValue = array(
                     'text' => $value['event_value'],
                     'time' => $eventDate->modify($this->oData->getTimezoneOffset() . "hour")->format("Y-m-d H:i:s")
@@ -586,7 +586,7 @@ class Manager
 
         // raw events result requested to build a custom array with chats' details
         foreach ($result as $value) {
-            $eventDate = new \DateTime($value['timestamp']);
+            $eventDate = new \DateTime("@" . $value['timestamp']);
             $chats[] = array(
                 'name' => ($value['player'] == $this->oData->getPlayerNumber()
                     ? $this->oData->getPlayerName()
