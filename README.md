@@ -39,6 +39,10 @@ php bin/client.php
 
 ## === Changelog ===
 
+* version **0.5**
+ * Refactored code (namespaces, naming, file structure)
+ * Added chat information for CLI
+ * Fixed bugs (long call settings, coordinates validation)
 * version **0.4**
  * Added marking whose turn it is
  * Added random ships setting

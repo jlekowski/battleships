@@ -5,7 +5,7 @@ namespace Battleships\Game;
  * Battleships\Game\Data class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.4
+ * @version    0.5
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.3
  *
