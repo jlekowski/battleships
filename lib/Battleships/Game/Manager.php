@@ -68,7 +68,7 @@ class Manager
      *
      * @var array
      */
-    public static $axisX = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    public static $axisX = array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
 
     /**
      * Initiates PDO Object and creates DB tables if required
