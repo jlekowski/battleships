@@ -165,26 +165,31 @@ class CliView
                 switch ($action) {
                     case "name_update":
                         $output = $oldOtherName . " changed name to: " . $this->oData->getOtherName();
-                        $this->outputsAppend($output);
                         break;
 
                     case "start_game":
                         $output = $this->oData->getOtherName() . " started the game";
-                        $this->outputsAppend($output);
                         break;
 
                     case "join_game":
                         $output = $this->oData->getOtherName() . " joined the game";
-                        $this->outputsAppend($output);
                         break;
 
                     case "shot":
                         $output = $this->oData->getOtherName() . " shot " . $update;
-                        $this->outputsAppend($output);
                         break;
 
                     case "chat":
+                        $output = $this->oData->getOtherName() . " sent message: " . $update['text'];
                         break;
+
+                    default:
+                        $output = "";
+                        break;
+                }
+
+                if ($output != "") {
+                    $this->outputsAppend($output);
                 }
             }
         }
