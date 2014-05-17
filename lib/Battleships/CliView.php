@@ -5,7 +5,7 @@ use Battleships\Soap\Client;
 use Battleships\Game\Manager;
 
 /**
- * Battleships\CliInterface class
+ * Battleships\CliView class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.4
@@ -13,13 +13,16 @@ use Battleships\Game\Manager;
  * @since      File available since Release 0.3
  *
  */
-class CliInterface
+class CliView
 {
     private $outputs = array();
     private $oClient;
     private $oData;
-    private $runInterface;
+    private $runView;
 
+    /**
+     * @param \Battleships\Soap\Client $oClient
+     */
     public function __construct(Client $oClient)
     {
         $this->oClient = $oClient;
@@ -27,8 +30,8 @@ class CliInterface
 
     public function run()
     {
-        $this->runInterface = true;
-        while ($this->runInterface) {
+        $this->runView = true;
+        while ($this->runView) {
             $command = "";
 
             if (empty($this->oData)) {
@@ -82,8 +85,8 @@ class CliInterface
 
             case "q":
             case "exit":
-                $this->runInterface = false;
-                $this->outputsAppend("exit interface");
+                $this->runView = false;
+                $this->outputsAppend("exit CLI view");
                 break;
 
             default:
@@ -203,13 +206,13 @@ class CliInterface
             // 11 divs/columns in each row (first column for Y axis labels)
             for ($j = 0; $j < 11; $j++) {
                 if ($i == 0 && $j > 0) {
-                    $text = Manager::$axisY[($j - 1)];
+                    $text = Manager::$axisX[($j - 1)];
                     $board .= sprintf(" % 2s ", $text);
                 } elseif ($j == 0 && $i > 0) {
-                    $text = Manager::$axisX[($i - 1)];
+                    $text = Manager::$axisY[($i - 1)];
                     $board .= sprintf(" % 2s |", $text);
                 } elseif ($j > 0 && $i > 0) {
-                    $coords = Manager::$axisY[($j - 1)] . Manager::$axisX[($i - 1)];
+                    $coords = Manager::$axisY[($i - 1)] . Manager::$axisX[($j - 1)];
                     $text = array_key_exists($coords, $battle['playerGround'])
                         ? $marks[ $battle['playerGround'][$coords] ]
                         : "";
@@ -223,13 +226,13 @@ class CliInterface
                     if ($j == 1) {
                         $board .= "     ";
                     }
-                    $text = Manager::$axisY[($j - 1)];
+                    $text = Manager::$axisX[($j - 1)];
                     $board .= sprintf(" % 2s ", $text);
                 } elseif ($j == 0 && $i > 0) {
-                    $text = Manager::$axisX[($i - 1)];
+                    $text = Manager::$axisY[($i - 1)];
                     $board .= sprintf(" % 2s |", $text);
                 } elseif ($j > 0 && $i > 0) {
-                    $coords = Manager::$axisY[($j - 1)].Manager::$axisX[($i - 1)];
+                    $coords = Manager::$axisY[($i - 1)] . Manager::$axisX[($j - 1)];
                     $text = array_key_exists($coords, $battle['otherGround'])
                         ? $marks[ $battle['otherGround'][$coords] ]
                         : "";

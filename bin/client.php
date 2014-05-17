@@ -13,8 +13,8 @@
 require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "init" . DIRECTORY_SEPARATOR . "bootstrap.php";
 
 use Battleships\Soap\Client;
-use Battleships\CliInterface;
+use Battleships\CliView;
 
 $oClient = new Client();
-$oCliInterface = new CliInterface($oClient);
-$oCliInterface->run();
+$oCliView = new CliView($oClient);
+$oCliView->run();
