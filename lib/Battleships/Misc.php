@@ -1,5 +1,8 @@
 <?php
+
 namespace Battleships;
+
+use Battleships\Exception\JsonException;
 
 /**
  * General functions
@@ -77,6 +80,17 @@ class Misc
         $uri = $_SERVER['DOCUMENT_URI'];
 
         return sprintf("%s://%s%s", $protocol, $host, $uri);
+    }
+
+    public static function jsonDecode($json, $assoc = false, $depth = 512, $options = 0)
+    {
+        $jsonObject = json_decode($json, $assoc, $depth, $options);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new JsonException();
+        }
+
+        return $jsonObject;
     }
 
     public static function log($log)

@@ -1,4 +1,5 @@
 <?php
+
 namespace Battleships\Soap;
 
 use Battleships\Game\Manager;

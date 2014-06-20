@@ -1,4 +1,5 @@
 <?php
+
 namespace Battleships;
 
 use Battleships\Soap\Client;

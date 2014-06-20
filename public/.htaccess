@@ -1,0 +1,11 @@
+# Turn mod_rewrite on
+RewriteEngine On
+RewriteBase /
+
+# If the request is not for a valid directory
+RewriteCond %{REQUEST_FILENAME} !-d
+# If the request is not for a valid file
+RewriteCond %{REQUEST_FILENAME} !-f
+# If the request is not for a valid link
+RewriteCond %{REQUEST_FILENAME} !-l
+RewriteRule ^ server.php [QSA,L]

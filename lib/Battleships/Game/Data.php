@@ -1,4 +1,5 @@
 <?php
+
 namespace Battleships\Game;
 
 /**
@@ -13,6 +14,7 @@ namespace Battleships\Game;
 class Data
 {
     public $battle;
+    public $chats;
     private $idGames = 0;
     private $gameTimestamp;
     private $playerNumber;
@@ -74,7 +76,7 @@ class Data
 
     public function setPlayerNumber($playerNumber)
     {
-        $this->playerNumber = $playerNumber;
+        $this->playerNumber = (int)$playerNumber;
     }
 
     public function getOtherNumber()
@@ -84,7 +86,7 @@ class Data
 
     public function setOtherNumber($otherNumber)
     {
-        $this->otherNumber = $otherNumber;
+        $this->otherNumber = (int)$otherNumber;
     }
 
     public function getPlayerHash()
@@ -258,6 +260,6 @@ class Data
 
     public function setWhoseTurn($whoseTurn)
     {
-        $this->whoseTurn = $whoseTurn;
+        $this->whoseTurn = (int)$whoseTurn;
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Battleships\Game;
 
 use Battleships\DB;
@@ -30,7 +31,7 @@ class Manager
      *
      * Example: object(Battleships\DB)#2 (0) { }
      *
-     * @var Battleships\DB
+     * @var \Battleships\DB
      */
     protected $oDB;
 
@@ -39,7 +40,7 @@ class Manager
      *
      * Example: object(Battleships\Game\Data)#2 (20) { }
      *
-     * @var Battleships\Game\Data
+     * @var \Battleships\Game\Data
      */
     public $oData;
 
@@ -107,6 +108,7 @@ class Manager
     protected function setError($error)
     {
         $this->error = $error;
+        Misc::log($error);
     }
 
     /**
@@ -425,6 +427,7 @@ class Manager
     public function startGame($ships)
     {
         if (!self::checkShips($ships) || count($this->oData->getPlayerShips()) > 0) {
+            $this->setError("Ships set incorrectly or already set");
             return false;
         }
 

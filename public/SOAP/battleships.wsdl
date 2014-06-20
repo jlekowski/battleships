@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <definitions name="Battleships"
-             targetNamespace="http://dev.lekowski.pl/battleships/public/SOAP/server.php"
-             xmlns:tns="http://dev.lekowski.pl/battleships/public/SOAP/server.php"
+             targetNamespace="http://battleships.localhost/SOAP/server.php"
+             xmlns:tns="http://battleships.localhost/SOAP/server.php"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
              xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
              xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
@@ -155,7 +155,7 @@
 
     <service name="BattleshipsSoapService">
         <port name="BattleshipsSoapPort" binding="BattleshipsSoapNs:BattleshipsSoapBinding">
-            <soap:address location="http://dev.lekowski.pl/battleships/public/SOAP/server.php"/>
+            <soap:address location="http://battleships.localhost/SOAP/server.php"/>
         </port>
     </service>
 </definitions>
