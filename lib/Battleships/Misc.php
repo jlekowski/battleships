@@ -39,7 +39,7 @@ class Misc
     public static function isRootDir()
     {
         // TODO - SERVER as a param
-        $urlInfo     = parse_url($_SERVER['SCRIPT_URI']);
+        $urlInfo     = parse_url(self::getRequestedUrl());
         $urlPathInfo = pathinfo($urlInfo['path']);
 
         return $urlPathInfo['dirname'] == "/";
@@ -51,7 +51,7 @@ class Misc
      */
     public static function getSqliteUrl()
     {
-        $urlInfo     = parse_url($_SERVER['SCRIPT_URI']);
+        $urlInfo     = parse_url(self::getRequestedUrl());
         $urlPathInfo = pathinfo($urlInfo['path']);
 
         $dirInfo = explode("/", $urlPathInfo['dirname']);
@@ -64,6 +64,19 @@ class Misc
         $directSqliteUrl = $urlInfo['scheme'] . "://" . $urlInfo['host'] . implode('/', $dirInfo) . "/" . SQLITE_FILE;
 
         return $directSqliteUrl;
+    }
+
+    public static function getRequestedUrl()
+    {
+        if (isset($_SERVER['SCRIPT_URI'])) {
+            return $_SERVER['SCRIPT_URI'];
+        }
+
+        $protocol = $_SERVER['SERVER_PORT'] === "443" ? "https" : "http";
+        $host = $_SERVER['HTTP_HOST'];
+        $uri = $_SERVER['DOCUMENT_URI'];
+
+        return sprintf("%s://%s%s", $protocol, $host, $uri);
     }
 
     public static function log($log)

@@ -40,14 +40,14 @@ if (!array_key_exists('hash', $_GET)) {
         exit;
     }
 
-    header("Location: " . $_SERVER['SCRIPT_URI'] . "?hash=" . $oManager->oData->getPlayerHash(), 303);
+    header("Location: " . Misc::getRequestedUrl() . "?hash=" . $oManager->oData->getPlayerHash(), 303);
     exit;
 }
 
 // initiate the game and throw error when hash is incorrect
 $gameInitiated = $oManager->initGame($_GET['hash']);
 if ($gameInitiated === false) {
-    echo $oManager->getError() . "<br />Refresh or try to <a href='" . $_SERVER['SCRIPT_URI'] . "'>start a new game</a>.";
+    echo $oManager->getError() . "<br />Refresh or try to <a href='" . Misc::getRequestedUrl() . "'>start a new game</a>.";
     exit;
 }
 
@@ -106,7 +106,7 @@ if (!Misc::isRootDir() && (SQLITE_FILE == "battleships.sqlite")) {
 if ($oManager->oData->getPlayerNumber() == 1 && $oManager->oData->getOtherJoined() === false) {
 ?>
     Temporary link to the game for the opponent:
-    <span><?=$_SERVER['SCRIPT_URI']?>?hash=<?=$oManager->oData->getOtherHash()?></span>
+    <span><?=Misc::getRequestedUrl()?>?hash=<?=$oManager->oData->getOtherHash()?></span>
 <?php
 }
 ?>
