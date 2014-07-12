@@ -64,7 +64,7 @@ class Response
 
     public function setError(\Exception $e)
     {
-        Misc::log(sprintf("Error (code: %d, message: %s)", $e->getCode(), $e->getMessage()));
+        Misc::log($e);
         $this->error = $e;
     }
 

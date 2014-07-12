@@ -17,37 +17,19 @@ use Battleships\Misc;
 class Client
 {
     /**
-     *
-     * @var string
+     * @var \SoapClient
      */
-    private $error;
+    private $soapClient;
 
     /**
-     * Get Error
-     * @return string Error
+     * Initiate SOAP Client
      */
-    public function getError()
-    {
-        return $this->error;
-    }
-
-    /**
-     * Set Error
-     * @param string $error Error to be set
-     * @return void
-     */
-    public function setError($error)
-    {
-        $this->error = $error;
-        Misc::log($error);
-    }
-
     public function __construct()
     {
         try {
             $this->soapClient = new \SoapClient(WSDL_URL, array('cache_wsdl' => WSDL_CACHE_NONE, 'trace' => true));
         } catch (\SoapFault $e) {
-            $this->setError($e->getMessage());
+            Misc::log($e);
         }
     }
 
@@ -61,7 +43,7 @@ class Client
         try {
             $game = $this->soapClient->getGame($hash);
         } catch (\SoapFault $e) {
-            $this->setError($e->getMessage());
+            Misc::log($e);
         }
 
         return new Data($game);
@@ -75,7 +57,7 @@ class Client
                 $oData->setPlayerName($playerName);
             }
         } catch (\SoapFault $e) {
-            $this->setError($e->getMessage());
+            Misc::log($e);
         }
     }
 
@@ -91,7 +73,7 @@ class Client
                 }
             }
         } catch (\SoapFault $e) {
-            $this->setError($e->getMessage());
+            Misc::log($e);
         }
 
         return $result;
@@ -108,7 +90,7 @@ class Client
                 $oData->setWhoseTurn($whoseTurn);
             }
         } catch (\SoapFault $e) {
-            $this->setError($e->getMessage());
+            Misc::log($e);
         }
 
         return $result;
@@ -119,7 +101,7 @@ class Client
         try {
             $result = $this->soapClient->getUpdates($oData->getPlayerHash(), $oData->getLastIdEvents());
         } catch (\SoapFault $e) {
-            $this->setError($e->getMessage());
+            Misc::log($e);
         }
 
         foreach ($result as $action => $updates) {

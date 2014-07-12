@@ -21,22 +21,22 @@ use Battleships\Game\Manager;
 use Battleships\Misc;
 
 // initiate Battleships objects
-$oDB = new DB(DB_TYPE);
-$oData = new Data();
-$oManager = new Manager($oData, $oDB);
-$error = $oManager->getError();
-
-if ($error !== null) {
-    echo $error;
+try {
+    $oDB = new DB(DB_TYPE);
+    $oData = new Data();
+    $oManager = new Manager($oData, $oDB);
+} catch (Exception $e) {
+    echo $e->getMessage();
     exit;
 }
 
 
 // if no hash provided initiate a game and redirect to the game's hash
 if (!array_key_exists('hash', $_GET)) {
-    $gameInitiated = $oManager->initGame();
-    if ($gameInitiated === false) {
-        echo $oManager->getError();
+    try {
+        $oManager->initGame();
+    } catch (Exception $e) {
+        echo $e->getMessage();
         exit;
     }
 
@@ -44,10 +44,11 @@ if (!array_key_exists('hash', $_GET)) {
     exit;
 }
 
-// initiate the game and throw error when hash is incorrect
-$gameInitiated = $oManager->initGame($_GET['hash']);
-if ($gameInitiated === false) {
-    echo $oManager->getError() . "<br />Refresh or try to <a href='" . Misc::getRequestedUrl() . "'>start a new game</a>.";
+try {
+    // initiate the game and throw error when hash is incorrect
+    $oManager->initGame($_GET['hash']);
+} catch (Exception $e) {
+    echo $e->getMessage() . "<br />Refresh or try to <a href='" . Misc::getRequestedUrl() . "'>start a new game</a>.";
     exit;
 }
 

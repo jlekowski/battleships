@@ -7,6 +7,8 @@ use Battleships\Game\Data;
 use Battleships\Game\Manager;
 use Battleships\Game\Formatter;
 use Battleships\Misc;
+use Battleships\Exception\InvalidHashException;
+use Battleships\Exception\MissingHashException;
 
 class GamesController extends Controller
 {
@@ -20,23 +22,16 @@ class GamesController extends Controller
         if ($this->actionName !== "add") {
             $hash = $this->getParam('controllerParam');
             if (empty($hash)) {
-                throw new \Exception("No hash provided");
+                throw new MissingHashException();
             }
 
-            $gameInitiated = $this->oManager->initGame($hash);
-            if ($gameInitiated === false) {
-                throw new \Exception("Invalid hash provided");
-            }
+            $this->oManager->initGame($hash);
         }
     }
 
     public function addAction()
     {
-        $gameInitiated = $this->oManager->initGame();
-        if ($gameInitiated === false) {
-            throw new \Exception("Game could not be initiated");
-        }
-
+        $this->oManager->initGame();
         $oFormatter = new Formatter($this->oManager);
 
         $this->result = $oFormatter->getForGame(true);
@@ -51,20 +46,14 @@ class GamesController extends Controller
 
     public function updateAction()
     {
-        $nameUpdated = $this->oManager->updateName($this->data->name);
-        if ($nameUpdated === false) {
-            throw new \Exception("Name could not be added");
-        }
+        $this->oManager->updateName($this->data->name);
 
-        $this->result = $nameUpdated;
+        $this->result = true;
     }
 
     public function addChatsAction()
     {
-        $chatAdded = $this->oManager->addChat($this->data->chat);
-        if ($chatAdded === false) {
-            throw new \Exception("Chat could not be added");
-        }
+        $this->oManager->addChat($this->data->chat);
 
         $this->result = Misc::getUtcTime()->format("Y-m-d H:i:s");
     }
@@ -72,21 +61,15 @@ class GamesController extends Controller
     public function addShipsAction()
     {
         $ships = strtoupper(implode(",", $this->data->ships));
-        $gameStarted = $this->oManager->startGame($ships);
-        if ($gameStarted === false) {
-            throw new \Exception("Game could not be started");
-        }
+        $this->oManager->startGame($ships);
 
-        $this->result = $gameStarted;
+        $this->result = true;
     }
 
     public function addShotsAction()
     {
         $coords = strtoupper($this->data->shot);
         $shotResult = $this->oManager->addShot($coords);
-        if ($shotResult === false) {
-            throw new \Exception("Shot could not be added");
-        }
 
         $this->result = $shotResult;
     }

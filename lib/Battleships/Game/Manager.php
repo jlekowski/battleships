@@ -4,6 +4,10 @@ namespace Battleships\Game;
 
 use Battleships\DB;
 use Battleships\Misc;
+use Battleships\Exception\InvalidHashException;
+use Battleships\Exception\InvalidShipsException;
+use Battleships\Exception\InvalidCoordinatesException;
+use Battleships\Exception\GameFlowException;
 
 /**
  * Battleships\Game\Manager class
@@ -45,15 +49,6 @@ class Manager
     public $oData;
 
     /**
-     * Error variable
-     *
-     * Example: Shot's coordinates are incorrect (A11)
-     *
-     * @var string
-     */
-    private $error;
-
-    /**
      * Array with Y axis elements
      *
      * Example: array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J");
@@ -76,45 +71,19 @@ class Manager
      *
      * @param Battleships\Game\Data $oData
      * @param Battleships\DB $oDB
-     * @return void
      */
     public function __construct(Data $oData, DB $oDB)
     {
         $this->oDB = $oDB;
         $this->oData = $oData;
 
-        if ($this->doTablesExist() === false && is_null($this->getError())) {
+        if ($this->doTablesExist() === false) {
             $this->createTables();
         }
     }
 
     /**
-     * Returns Errors
-     *
-     * @return string Error
-     */
-    public function getError()
-    {
-        return $this->oDB->getError() !== null ? $this->oDB->getError() : $this->error;
-    }
-
-    /**
-     * Sets Errors
-     *
-     * @param string $error Error to be set
-     *
-     * @return void
-     */
-    protected function setError($error)
-    {
-        $this->error = $error;
-        Misc::log($error);
-    }
-
-    /**
      * Creates DB tables (CREATE TABLE) - games, events
-     *
-     * @return void
      */
     private function createTables()
     {
@@ -171,16 +140,10 @@ class Manager
      * Loads Battleships\Game\Data values
      *
      * @param string $hash Game hash
-     *
-     * @return bool Whether game was initiated successfully
      */
     public function initGame($hash = "")
     {
         $game = $hash === "" ? $this->createGame() : $this->getGameByHash($hash);
-
-        if ($game === false) {
-            return false;
-        }
 
         $this->oData->setIdGames($game['id']);
 
@@ -221,8 +184,6 @@ class Manager
         }
 
         $this->determineWhoseTurn();
-
-        return true;
     }
 
     /**
@@ -232,7 +193,8 @@ class Manager
      *
      * @param string $hash Game hash
      *
-     * @return array|false Game row from DB or false on error
+     * @return array Game row from DB
+     * @throws \Battleships\Exception\InvalidHashException
      */
     private function getGameByHash($hash)
     {
@@ -243,8 +205,7 @@ class Manager
         $result = $this->oDB->getFirst($query, array(':hash' => $hash));
 
         if (is_array($result) && empty($result)) {
-            $this->setError("Game (" . $hash . ") does not exist");
-            return false;
+            throw new InvalidHashException($hash);
         }
 
         return $result;
@@ -253,7 +214,7 @@ class Manager
     /**
      * Creates a new game
      *
-     * @return array|false New game row from DB or false on error
+     * @return array New game row from DB
      */
     private function createGame()
     {
@@ -274,11 +235,7 @@ class Manager
         $query = "INSERT INTO games (player1_hash, player1_name, player1_ships,
                                      player2_hash, player2_name, player2_ships, timestamp)
                   VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $result = $this->oDB->fQuery($query, array_values($game));
-
-        if ($result === false) {
-            return false;
-        }
+        $this->oDB->fQuery($query, array_values($game));
 
         $game['player_number'] = 1; // player who starts is always No. 1
         $game['id'] = $this->oDB->lastInsertId();
@@ -298,13 +255,7 @@ class Manager
         $query = sprintf("UPDATE games SET player%d_name = ? WHERE id = ?", $this->oData->getPlayerNumber());
         $result = $this->oDB->fQuery($query, array($playerName, $this->oData->getIdGames()));
 
-        if ($result === false) {
-            return false;
-        }
-
         $this->addEvent('name_update', $playerName);
-
-        return true;
     }
 
     /**
@@ -313,7 +264,7 @@ class Manager
      * Gets updates which appeared since the last getUpdates() call<br />
      * array(0 => array('action' => event_type, 'value' => event_value))
      *
-     * @return array|false List of updates or false on error
+     * @return array List of updates
      */
     public function getUpdates()
     {
@@ -323,10 +274,6 @@ class Manager
             $this->oData->getIdGames(),
             $this->oData->getOtherNumber()
         ));
-
-        if ($result === false) {
-            return false;
-        }
 
         $updates = array();
         foreach ($result as $value) {
@@ -373,23 +320,17 @@ class Manager
      *
      * @param string $eventType Type of the event
      * @param string $eventValue Value of the event
-     *
-     * @return bool Whether event was inserted successfully
      */
     private function addEvent($eventType, $eventValue = 1)
     {
         $query = "INSERT INTO events (game_id, player, event_type, event_value, timestamp) VALUES (?, ?, ?, ?, ?)";
-        $result = $this->oDB->fQuery($query, array(
+        $this->oDB->fQuery($query, array(
             $this->oData->getIdGames(),
             $this->oData->getPlayerNumber(),
             $eventType,
             $eventValue,
             Misc::getUtcTime()->getTimestamp()
         ));
-
-        if ($result === false) {
-            return false;
-        }
 
         switch ($eventType) {
             case 'name_update':
@@ -411,8 +352,6 @@ class Manager
             default:
                 break;
         }
-
-        return true;
     }
 
     /**
@@ -421,35 +360,19 @@ class Manager
      * Updates the game with the ships provided
      *
      * @param string $ships Ships set by the player (Example: "A1,B4,J10,..."))
-     *
-     * @return bool Whether the game started successfully
+     * @throws \Battleships\Exception\InvalidShipsException
+     * @todo refactor all startGame() results (used to return bool)
      */
     public function startGame($ships)
     {
-        if (!self::checkShips($ships) || count($this->oData->getPlayerShips()) > 0) {
-            $this->setError("Ships set incorrectly or already set");
-            return false;
-        }
-
-        // check whether all coordinates are correct (e.g. A1, B4, J10)
-        $shipsArray = explode(",", $ships);
-        foreach ($shipsArray as $coords) {
-            if (self::coordsInfo($coords) === false) {
-                $this->setError("Ship's coordinates are incorrect (" . $coords . ")");
-                return false;
-            }
+        self::checkShips($ships);
+        if (count($this->oData->getPlayerShips()) > 0) {
+            throw new InvalidShipsException("Ships already set");
         }
 
         $query = sprintf("UPDATE games SET player%d_ships = ? WHERE id = ?", $this->oData->getPlayerNumber());
-        $result = $this->oDB->fQuery($query, array($ships, $this->oData->getIdGames()));
-
-        if ($result === false) {
-            return false;
-        }
-
+        $this->oDB->fQuery($query, array($ships, $this->oData->getIdGames()));
         $this->addEvent("start_game", $ships);
-
-        return true;
     }
 
     /**
@@ -458,24 +381,18 @@ class Manager
      * Check the coordinates of the shot and returns the result
      *
      * @param string $coords Shot coordinates (Example: "A1", "B4", "J10", ...)
-     *
      * @return string Shot result (miss|sunk|hit)
+     * @throws \Battleships\Exception\GameFlowException
      */
     public function addShot($coords)
     {
-        if (self::coordsInfo($coords) === false) {
-            $this->setError("Shot's coordinates are incorrect (" . $coords . ")");
-            return false;
-        }
-
+        self::coordsInfo($coords);
         if ($this->oData->getOtherStarted() == false) {
-            $this->setError("Other player has not started yet");
-            return false;
+            throw new GameFlowException("Other player has not started yet");
         }
 
         if ($this->oData->isMyTurn() == false) {
-            $this->setError("It's other player's turn");
-            return false;
+            throw new GameFlowException("It's other player's turn");
         }
 
         $this->addEvent("shot", $coords);
@@ -501,20 +418,14 @@ class Manager
      * @param string $coords Shot coordinates (Example: "A1", "B4", "J10", ...)
      * @param string $shooter Whose shot is about to be checked (player|other)
      * @param int $direction Direction which is checked for ship's masts
-     *
      * @return bool Whether the ship is sunk after this shot or not
+     * @throws \InvalidArgumentException
      */
     private function checkSunk($coords, $shooter = "player", $direction = null)
     {
         $coordsInfo = self::coordsInfo($coords);
-        if ($coordsInfo === false) {
-            $this->setError("Coordinates are incorrect (" . $coords . ")");
-            return false;
-        }
-
         if (!in_array($shooter, array("player", "other"))) {
-            $this->setError("Incorrect shooter (" . $shooter . ")");
-            return false;
+            throw new \InvalidArgumentException("Incorrect shooter (" . $shooter . ")");
         }
 
         $checkSunk = true;
@@ -575,7 +486,7 @@ class Manager
      *
      * Returns all chats for a requested game
      *
-     * @return array|false Chats for the game
+     * @return array Chats for the game
      *         (Example: [0 => ['name' => {player_name}, 'text' => "Hi!", 'time' => "2012-11-05 23:34"],  ...])
      */
     public function getChats()
@@ -583,10 +494,6 @@ class Manager
         $chats = array();
 
         $result = $this->getEvents("chat", true);
-        if ($result === false) {
-            return false;
-        }
-
         // raw events result requested to build a custom array with chats' details
         foreach ($result as $value) {
             $eventDate = new \DateTime("@" . $value['timestamp']);
@@ -612,7 +519,7 @@ class Manager
      * @param string|array $eventType Types of events to be returned (all if not/null provided)
      * @param bool $raw Whether to return a query result or group the result by even_type and player_number
      *
-     * @return array|false Events for the game
+     * @return array Events for the game
      *         (Example: ['chat' => [1 => [0 => "Hi!", 2 => ...], 'shot' => [1 => array[0 => "A1", ...], ...]
      */
     private function getEvents($eventType, $raw = false)
@@ -620,13 +527,13 @@ class Manager
         $query = "SELECT * FROM events WHERE game_id = ? AND event_type IN (:event_types)";
         $result = $this->oDB->fQuery($query, array($this->oData->getIdGames(), ':event_types' => $eventType));
 
-        if ($raw || $result === false) {
+        if ($raw) {
             return $result;
         }
 
         // group the response by event type and player number
         $events = array();
-        foreach ($result as $value) {
+        foreach ((array)$result as $value) {
             $events[ $value['event_type'] ][ $value['player'] ][] = $value['event_value'];
         }
 
@@ -640,16 +547,12 @@ class Manager
      *
      * @param int $player Player number (1|2)
      *
-     * @return int|false Id of the last event made by the player
+     * @return int Id of the last event made by the player
      */
     private function findLastIdEvents($player)
     {
         $query = "SELECT MAX(id) AS id FROM events WHERE game_id = ? AND player = ? GROUP BY game_id";
         $result = $this->oDB->getFirst($query, array($this->oData->getIdGames(), $player));
-
-        if ($result === false) {
-            return false;
-        }
 
         return empty($result) ? 0 : (int)$result['id'];
     }
@@ -706,43 +609,20 @@ class Manager
      * Adds new 'chat' event
      *
      * @param string $text Chat text
-     *
-     * @return bool Whether 'chat' event was inserted successfully
      */
     public function addChat($text)
     {
-        return $this->addEvent("chat", $text);
+        $this->addEvent("chat", $text);
     }
 
     /**
      * Marks that a player joined current game
      *
      * Adds new 'join_game' event
-     *
-     * @return bool Whether 'join_game' event was inserted successfully
      */
     public function joinGame()
     {
-        return $this->addEvent("join_game");
-    }
-
-    /**
-     * Converts standard coordinates to board index (numeric value)
-     *
-     * Standard coordinates are converted to indexes, e.g. "A1" -> "00", "B3" -> "12", "J10" -> "99"
-     *
-     * @param string $coords Coordinates (Example: "A1", "B4", "J10", ...)
-     *
-     * @return string Two indexes (Y and X) concatenated
-     */
-    private static function toIndex($coords)
-    {
-        $coordsInfo = self::coordsInfo($coords);
-        if ($coordsInfo === false) {
-            return false;
-        }
-
-        return $coordsInfo['position_y'] . $coordsInfo['position_x'];
+        $this->addEvent("join_game");
     }
 
     /**
@@ -753,13 +633,13 @@ class Manager
      * Example: "B3" -> array('coord_y' => "B", 'coord_x' => "3", 'position_y' => 1, 'position_x' => 2)
      *
      * @param string $coords Coordinates (Example: "A1", "B4", "J10", ...)
-     *
      * @return array Split coordinates (Y and X) and indexes (Y and X)
+     * @throws \Battleships\Exception\InvalidCoordinatesException
      */
     private static function coordsInfo($coords)
     {
         if (!$coords) {
-            return false;
+            throw new InvalidCoordinatesException($coords);
         }
 
         $coordY    = $coords[0];
@@ -769,7 +649,7 @@ class Manager
         $positionX = array_search($coordX, self::$axisX);
 
         if ($positionY === false || $positionX === false) {
-            return false;
+            throw new InvalidCoordinatesException($coords);
         }
 
 
@@ -790,13 +670,17 @@ class Manager
      *     sizes and shapes of the ships, and potential edge connections between them.
      *
      * @param string $ships Ships set by the player (Example: "A1,B4,J10,...")
-     *
-     * @return bool Whether the ships are set correctly
+     * @throws \Battleships\Exception\InvalidShipsException
      */
     public static function checkShips($ships)
     {
-        // converts all coordinates to indexes and sorts them for more efficient validation
-        $shipsArray = array_map("self::toIndex", explode(",", $ships));
+        // Standard coordinates are converted to indexes, e.g. "A1" -> "00", "B3" -> "12", "J10" -> "99"
+        $toIndex = function($coords) {
+            $coordsInfo = Manager::coordsInfo($coords);
+
+            return $coordsInfo['position_y'] . $coordsInfo['position_x'];
+        };
+        $shipsArray = array_map($toIndex, explode(",", $ships));
         sort($shipsArray);
 
         // required number of masts
@@ -808,7 +692,7 @@ class Manager
 
         // if the number of masts is correct
         if (count($shipsArray) != $shipsLength) {
-            return false;
+            throw new InvalidShipsException("Number of ships' masts is incorrect");
         }
 
 
@@ -828,7 +712,7 @@ class Manager
             $lowerRightCorner = ($index[1] < 9) && (in_array($index + 11, $shipsArray));
 
             if ($upperRightCorner || $lowerRightCorner) {
-                return false;
+                throw new InvalidShipsException("Ships's corners can't touch each other");
             }
         }
 
@@ -860,7 +744,7 @@ class Manager
 
                     // ship is too long
                     if (++$shipType > 4) {
-                        return false;
+                        throw new InvalidShipsException("Ship can't have more than four masts");
                     }
                 }
 
@@ -878,26 +762,18 @@ class Manager
         // whether the number of different ship types is correct
         $diff = array_diff_assoc($shipsTypes, array(1 => 4, 2 => 3, 3 => 2, 4 => 1));
         if (!empty($diff)) {
-            return false;
+            throw new InvalidShipsException("Number of ships' types is incorrect");
         }
-
-        return true;
     }
 
     /**
      * Finds and sets which player's turn it is
-     *
-     * @return bool Whether turn determined
      */
     private function determineWhoseTurn()
     {
         $query = "SELECT player, event_value FROM events
                   WHERE game_id = ? AND event_type = 'shot' ORDER BY id DESC LIMIT 1";
         $result = $this->oDB->getFirst($query, array($this->oData->getIdGames()));
-
-        if ($result === false) {
-            return false;
-        }
 
         if (empty($result)) {
             $whoseTurn = 1;
@@ -910,8 +786,6 @@ class Manager
         }
 
         $this->oData->setWhoseTurn($whoseTurn);
-
-        return true;
     }
 
     /**

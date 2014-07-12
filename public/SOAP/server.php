@@ -28,5 +28,5 @@ try {
     $oServer->setClass("Battleships\Soap\Server", $oManager);
     $oServer->handle();
 } catch (\SoapFault $e) {
-    Misc::log($e->getMessage());
+    Misc::log($e);
 }

@@ -2,6 +2,8 @@
 
 namespace Battleships;
 
+use Battleships\Exception\DBException;
+
 /**
  * Database class
  *
@@ -23,15 +25,6 @@ class DB extends \PDO
     private $sth;
 
     /**
-     * Error variable
-     *
-     * Example: HY000 | 8 | attempt to write a readonly database
-     *
-     * @var string
-     */
-    private $error;
-
-    /**
      * Database type variable
      *
      * Example: SQLITE, MYSQL
@@ -44,9 +37,9 @@ class DB extends \PDO
      * Initiates PDO Object and creates DB tables if required
      *
      * @param string $dbType Type of the database
-     *
-     * @return void
+     * @throws \InvalidArgumentException
      */
+
     public function __construct($dbType)
     {
         $this->dbType = $dbType;
@@ -62,55 +55,12 @@ class DB extends \PDO
                     break;
 
                 default:
-                    throw new \Exception("Correct DB type is missing (" . $dbType .")");
+                    throw new \InvalidArgumentException("Correct DB type is missing (" . $dbType .")");
             }
         } catch (\Exception $e) {
-            Misc::log($e->getMessage());
+            Misc::log($e);
             exit('Database error occurred');
         }
-    }
-
-    /**
-     * Returns Errors
-     *
-     * @return string Error
-     */
-    public function getError()
-    {
-        if ($this->isErrorCode($this->errorCode())) {
-            $error = implode(" | ", $this->errorInfo());
-        } elseif ($this->sth instanceof \PDOStatement && $this->isErrorCode($this->sth->errorCode())) {
-            $error = implode(" | ", $this->sth->errorInfo());
-        } else {
-            $error = $this->error;
-        }
-
-        return $error;
-    }
-
-    /**
-     * Sets Errors
-     *
-     * @param string $error Error to be set
-     *
-     * @return void
-     */
-    private function setError($error)
-    {
-        $this->error = $error;
-    }
-
-    /**
-     * Checks whether the code is an error code, or not
-     *
-     * @param mixed $code
-     *
-     * @return bool
-     */
-    private function isErrorCode($code)
-    {
-        // "00000" error code means that everything is correct
-        return !in_array($code, array(null, "00000"), true);
     }
 
     /**
@@ -127,15 +77,15 @@ class DB extends \PDO
      * Runs SQL Query and returns result (all records)
      *
      * @param string $query SQL Query
-     *
-     * @return array|false SQL Query result
+     * @return array SQL Query result
+     * @throws \Battleships\Exception\DBException
      */
     public function query($query)
     {
         $result = parent::query($query);
 
         if ($result === false) {
-            return false;
+            throw new DBException("Query could not be executed");
         }
 
         return $result->fetchall(\PDO::FETCH_ASSOC);
@@ -145,33 +95,28 @@ class DB extends \PDO
      * Sets query using PDO prepare
      *
      * @param string $query SQL Query prepare
-     *
-     * @return bool Whether an error in PDO prepare ocurred
+     * @throws \Battleships\Exception\DBException
      */
     public function prepare($query)
     {
         $this->sth = parent::prepare($query, array(\PDO::ATTR_CURSOR => \PDO::CURSOR_FWDONLY));
 
         if ($this->sth === false) {
-            return false;
+            throw new DBException("Statement could not be prepared");
         }
-
-        return true;
     }
 
     /**
      * Executes query using PDO execute
      *
      * @param array $values Values for SQL set in PDO prepare
-     *
-     * @return array|false SQL Query result
+     * @return array SQL Query result
+     * @throws \Battleships\Exception\DBException
      */
     public function execute($values)
     {
-        $result = $this->sth->execute($values);
-
-        if ($result === false) {
-            return false;
+        if ($this->sth->execute($values) === false) {
+            throw new DBException("Statement could not be executed");
         }
 
         return $this->sth->fetchAll(\PDO::FETCH_ASSOC);
@@ -184,8 +129,8 @@ class DB extends \PDO
      *
      * @param string $query SQL Query prepare
      * @param array $parameters Values for SQL set in PDO prepare
-     *
-     * @return array|false SQL Query result
+     * @return array SQL Query result
+     * @throws \Battleships\Exception\DBException
      */
     public function fQuery($query, $parameters)
     {
@@ -199,8 +144,7 @@ class DB extends \PDO
                 }
                 // for array values named marker must be used, i.e. :id, :event, ...
                 if (is_integer($key)) {
-                    $this->setError("DB query error - array PDO values must be set in assiociative array");
-                    return false;
+                    throw new DBException("DB query error - array PDO values must be set in assiociative array");
                 }
 
                 $markers = array();
@@ -225,7 +169,7 @@ class DB extends \PDO
      * @param string $query SQL Query (or SQL Query prepare)
      * @param array $parameters Values for SQL set in PDO prepare
      *
-     * @return array|false First row of the SQL Query result
+     * @return array First row of the SQL Query result
      */
     public function getFirst($query, $parameters = array())
     {

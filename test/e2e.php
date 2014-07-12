@@ -27,7 +27,7 @@ try {
     exit("ERROR: " . $e->getMessage() . PHP_EOL);
 }
 
-print_r($game);
+//print_r($game);
 exit("OK\n");
 
 class ApiRequest
@@ -62,35 +62,35 @@ class ApiRequest
     private function validateGame(stdClass $game)
     {
         if (empty($game->playerHash)) {
-            throw new Exception("No player hash");
+            throw new E2eException("No player hash");
         }
 
         if (empty($game->otherHash)) {
-            throw new Exception("No other hash");
+            throw new E2eException("No other hash");
         }
 
         if (empty($game->playerName)) {
-            throw new Exception("No player name");
+            throw new E2eException("No player name");
         }
 
         if (empty($game->otherName)) {
-            throw new Exception("No other name");
+            throw new E2eException("No other name");
         }
 
         if ($game->playerNumber !== 1) {
-            throw new Exception("Incorrect player number: " . $game->playerNumber);
+            throw new E2eException("Incorrect player number: " . $game->playerNumber);
         }
 
         if ($game->otherNumber !== 2) {
-            throw new Exception("Incorrect other number: " . $game->otherNumber);
+            throw new E2eException("Incorrect other number: " . $game->otherNumber);
         }
 
         if ($game->lastIdEvents !== 0) {
-            throw new Exception("Incorrect last id event: " . $game->lastIdEvents);
+            throw new E2eException("Incorrect last id event: " . $game->lastIdEvents);
         }
 
         if ($game->whoseTurn !== 1) {
-            throw new Exception("Incorrect whose turn: " . $game->whoseTurn);
+            throw new E2eException("Incorrect whose turn: " . $game->whoseTurn);
         }
     }
 
@@ -100,39 +100,37 @@ class ApiRequest
         $gameData = $this->call($oRequestDetails);
         $this->validateGameDetails($gameData, $game);
         $game = $gameData;
-
-        return true;
     }
 
     private function validateGameDetails(stdClass $gameData, stdClass $game)
     {
         foreach ($game as $key => $value) {
             if (!isset($gameData->$key) || $gameData->$key !== $value) {
-                throw new Exception("Incorrect property value: (" . $key . ": " . $value . " - " . $gameData->$key . ")");
+                throw new E2eException("Incorrect property value: (" . $key . ": " . $value . " - " . $gameData->$key . ")");
             }
         }
 
         if ($gameData->playerShips !== array()) {
-            throw new Exception("Incorrect player ships: " . print_r($gameData->playerShips, true));
+            throw new E2eException("Incorrect player ships: " . print_r($gameData->playerShips, true));
         }
 
         if ($gameData->otherJoined !== false) {
-            throw new Exception("Incorrect other joined: " . $gameData->otherJoined);
+            throw new E2eException("Incorrect other joined: " . $gameData->otherJoined);
         }
 
         if ($gameData->otherStarted !== false) {
-            throw new Exception("Incorrect other started: " . $gameData->otherStarted);
+            throw new E2eException("Incorrect other started: " . $gameData->otherStarted);
         }
 
         $emptyBattle = new stdClass();
         $emptyBattle->playerGround = array();
         $emptyBattle->otherGround = array();
         if ($gameData->battle != $emptyBattle) {
-            throw new Exception("Incorrect battle: " . print_r($gameData->battle, true));
+            throw new E2eException("Incorrect battle: " . print_r($gameData->battle, true));
         }
 
         if ($gameData->chats !== array()) {
-            throw new Exception("Incorrect chats: " . print_r($gameData->chats, true));
+            throw new E2eException("Incorrect chats: " . print_r($gameData->chats, true));
         }
     }
 
@@ -179,7 +177,7 @@ class ApiRequest
     public function validateDate($date)
     {
         if (!preg_match("/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/", $date)) {
-            throw new Exception("Incorrect chat date: " . $date);
+            throw new E2eException("Incorrect chat date: " . $date);
         }
     }
 
@@ -195,14 +193,14 @@ class ApiRequest
     private function validateEmptyArray($array)
     {
         if ($array !== array()) {
-            throw new Exception("Incorrect update info: " . print_r($array, true));
+            throw new E2eException("Incorrect update info: " . print_r($array, true));
         }
     }
 
     private function validateTrueResult($result, $methodName)
     {
         if ($result !== true) {
-            throw new Exception("Incorrect " . $methodName . " response: " . $result);
+            throw new E2eException("Incorrect " . $methodName . " response: " . $result);
         }
     }
 
@@ -215,7 +213,7 @@ class ApiRequest
         $curlResponse = curl_exec($this->ch);
         $response = Misc::jsonDecode($curlResponse);
         if ($response->error !== null) {
-            throw new Exception(print_r($response->error, true));
+            throw new E2eException(print_r($response->error, true));
         }
 
         return $response->result;
@@ -250,3 +248,5 @@ class RequestDetails
         return $this->request;
     }
 }
+
+class E2eException extends Exception {}

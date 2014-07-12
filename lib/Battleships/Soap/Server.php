@@ -52,13 +52,15 @@ class Server
     public function updateName($hash, $playerName)
     {
         $this->oManager->initGame($hash);
-        return $this->oManager->updateName($playerName);
+        $this->oManager->updateName($playerName);
+        return true;
     }
 
     public function startGame($hash, $ships)
     {
         $this->oManager->initGame($hash);
-        return $this->oManager->startGame(strtoupper($ships));
+        $this->oManager->startGame(strtoupper($ships));
+        return true;
     }
 
     public function addShot($hash, $coords)
@@ -90,10 +92,8 @@ class Server
     public function addChat($hash, $text)
     {
         $this->oManager->initGame($hash);
-        $result = $this->oManager->addChat($text)
-            ? Misc::getUtcTime()->modify($this->oManager->oData->getTimezoneOffset() . "hour")->format("Y-m-d H:i:s")
-            : "";
+        $result = $this->oManager->addChat($text);
 
-        return $result;
+        return Misc::getUtcTime()->modify($this->oManager->oData->getTimezoneOffset() . "hour")->format("Y-m-d H:i:s");
     }
 }

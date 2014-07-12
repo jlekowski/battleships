@@ -129,6 +129,10 @@ class Data
         $this->otherName = $otherName;
     }
 
+    /**
+     * Get player's ships
+     * @return array
+     */
     public function getPlayerShips()
     {
         return $this->playerShips ? explode(",", $this->playerShips) : array();
@@ -139,6 +143,10 @@ class Data
         $this->playerShips = $playerShips;
     }
 
+    /**
+     * Get opponent's ships
+     * @return array
+     */
     public function getOtherShips()
     {
         return $this->otherShips ? explode(",", $this->otherShips) : array();
@@ -149,10 +157,16 @@ class Data
         $this->otherShips = $otherShips;
     }
 
+    /**
+     * Get ships for a player (owner)
+     * @param string $owner (player|other)
+     * @return array Ships coordinates
+     * @throws \InvalidArgumentException
+     */
     public function getShips($owner)
     {
         if (!in_array($owner, array("player", "other"))) {
-            return false;
+            throw new \InvalidArgumentException("Invalid ships' owner: " . $owner);
         }
 
         return $owner == "player" ? $this->getPlayerShips() : $this->getOtherShips();
