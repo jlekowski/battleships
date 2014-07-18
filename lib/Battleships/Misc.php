@@ -95,10 +95,11 @@ class Misc
 
     public static function log($log)
     {
-        if (is_array($log) || is_object($log)) {
+        if ($log instanceof \Exception) {
+            $logMsg = sprintf("Error (code: %d, message: %s, type: %s)", $log->getCode(), $log->getMessage(),
+                get_class($log));
+        } elseif (is_array($log) || is_object($log)) {
             $logMsg = print_r($log, true);
-        } elseif ($log instanceof \Exception) {
-            $logMsg = sprintf("Error (code: %d, message: %s)", $log->getCode(), $log->getMessage());
         } else {
             $logMsg = $log;
         }

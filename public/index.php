@@ -62,6 +62,7 @@ try {
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
     <script src="js/jquery.xml2json.js"></script>
     <script src="js/jquery.soap.js"></script>
+    <script src="js/battleships.js"></script>
     <script src="js/main.js"></script>
 </head>
 <body>

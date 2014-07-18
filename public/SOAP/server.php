@@ -27,6 +27,7 @@ try {
     $oServer = new \SoapServer(WSDL_FILE);
     $oServer->setClass("Battleships\Soap\Server", $oManager);
     $oServer->handle();
-} catch (\SoapFault $e) {
+} catch (\Exception $e) {
     Misc::log($e);
+    $oServer->fault($e->getCode(), $e->getMessage());
 }
