@@ -7,8 +7,7 @@
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.6
  *
- * @todo       0. game_started and set_turn take into consideration other player started
- * @todo       1. Move variables and function into Battleships object
+ * @todo Move commaSeparated properties to be returned as arrays
  *
  */
 
@@ -23,8 +22,12 @@ var BattleshipsClass = function() {
     var chatbox_keys = "48-57, 59, 65-90, 96-105, 110, 188-191, 219-222";
     // whether the game has started
     var game_started = false;
-    // whether the game has started
+    // whether the game has ended
     var game_ended = false;
+    // whether player started the game
+    var player_started = false;
+    // whether opponent started the game
+    var other_started = false;
     // prevents shooting (when game not started or other player's turn)
     var shot_prevent = true;
     // true - updates are requested (updating ON), false - you can start requesting updates (updating OFF);
@@ -99,11 +102,7 @@ var BattleshipsClass = function() {
         }
 
         // first call to load ships, battle and chats
-        get_battle(function() {
-            check_game_end();
-            // start AJAX calls for updates
-            $("#update").triggerHandler('click');
-        });
+        get_battle();
     };
 
     function documentKeydownCallback(event) {
@@ -128,21 +127,21 @@ var BattleshipsClass = function() {
         // marking opponents ships
         if ($battleground.index(this) >= 100) {
             shot(this);
-        } else if (!game_started) {
+        } else if (!player_started) {
             // if game not started set the ship
             $(this).toggleClass("ship");
         }
     }
 
     function startClickCallback() {
-        if (game_started) {
-            alert("Game has already started");
+        if (player_started) {
+            alert("You have already started the game");
             return false;
         }
 
         var $ships = $battleground.board(0).filter(".ship");
 
-        if (ships_check($ships) == false) {
+        if (check_ships($ships) == false) {
             alert("There is either not enough ships or they're set incorrectly");
             return false;
         }
@@ -165,7 +164,7 @@ var BattleshipsClass = function() {
                     return false;
                 }
 
-                game_start($("#playerNumber").val() == 1);
+                start_game($("#playerNumber").val() == 1);
             }
         });
     }
@@ -260,7 +259,7 @@ var BattleshipsClass = function() {
                     return false;
                 }
 
-                chat_append(text, $("#name_update").text(), result);
+                chat_append(text, $("#playerNumber").val(), result);
                 $chatbox.val("");
             }
         });
@@ -465,17 +464,17 @@ var BattleshipsClass = function() {
 
                         switch (key) {
                             case 'name_update':
-                                $("div.board_menu:eq(1) span").text(update);
+                                $(".board_menu:eq(1) span").text(update);
                                 break;
 
                             case 'start_game':
                                 set_turn($("#playerNumber").val() == 1);
-                                $("div.board:eq(1) div div:not(:first-child)").css('border-right-color', "black");
-                                $("div.board:eq(1) div:not(:first-child) div").css('border-bottom-color', "black");
+                                other_started = true;
+                                game_started = player_started && other_started;
                                 break;
 
                             case 'join_game':
-                                $("div.board_menu:eq(1) span").css({fontWeight: "bold"});
+                                $(".board_menu:eq(1) span").css({fontWeight: "bold"});
                                 $("#game_link").text("");
                                 break;
 
@@ -489,7 +488,8 @@ var BattleshipsClass = function() {
                                 break;
 
                             case 'chat':
-                                chat_append(update.text, $("div.board_menu:eq(1) span").text(), update.time);
+                                var otherNumber = $("#playerNumber").val() == 1 ? 2 : 1;
+                                chat_append(update.text, otherNumber, update.timestamp);
                                 break;
 
                             case 'lastIdEvents':
@@ -508,7 +508,7 @@ var BattleshipsClass = function() {
         updateXHR.abort();
     }
 
-    function get_battle(callback) {
+    function get_battle() {
         var date = new Date();
         var timezone_offset = -date.getTimezoneOffset() / 60;
 
@@ -534,8 +534,9 @@ var BattleshipsClass = function() {
                 var chats  = gameData.chats;
                 lastIdEvents = gameData.lastIdEvents;
 
-                if (gameData.playerShips.length > 0) {
-                    game_start(gameData.whoseTurn == gameData.playerNumber);
+                other_started = gameData.otherStarted;
+                if (gameData.playerStarted) {
+                    start_game(gameData.whoseTurn == gameData.playerNumber);
                 }
 
                 for (key in gameData.playerShips) {
@@ -552,12 +553,12 @@ var BattleshipsClass = function() {
                 }
 
                 for (key in chats) {
-                    chat_append(chats[key].text, chats[key].name, chats[key].time);
+                    chat_append(chats[key].text, chats[key].player, chats[key].timestamp);
                 }
 
-                if ($.type(callback) == "function") {
-                    callback();
-                }
+                check_game_end();
+                // start AJAX calls for updates
+                $("#update").triggerHandler('click');
             }
         });
     }
@@ -655,8 +656,16 @@ var BattleshipsClass = function() {
         return xsiAttributes.type && xsiAttributes.type[1].toLowerCase() == type.toLowerCase();
     }
 
-    function chat_append(text, name, time) {
-        var $time = $("<span>").addClass("time").text("[" + time + "] ");
+    function chat_append(text, playerNumber, timestamp) {
+        var name = $(".board_menu:eq(" + (playerNumber - 1) + ") span").text();
+        var date = new Date(timestamp * 1000);
+        var formattedDate = date.getFullYear()
+            + "-" + (date.getMonth() < 10 ? "0" : "") + date.getMonth()
+            + "-" + (date.getDate() < 10 ? "0" : "") + date.getDate()
+            + " " + (date.getHours() < 10 ? "0" : "") + date.getHours()
+            + ":" + (date.getMinutes() < 10 ? "0" : "") + date.getMinutes()
+            + ":" + (date.getSeconds() < 10 ? "0" : "") + date.getSeconds();
+        var $time = $("<span>").addClass("time").text("[" + formattedDate + "] ");
         var $name = $("<span>").addClass("name").text(name + ": ");
         var $text = $("<span>").text(text);
         var $chat_row = $("<p>").append($time).append($name).append($text);
@@ -669,7 +678,7 @@ var BattleshipsClass = function() {
 
         // finding a place to put a new row into (in case if new updated chat is older than an existing one)
         for (i; i >= 0; i--) {
-            if ((t.eq(i).text().replace(/\[|\]/g, "") <= time)) {
+            if ((t.eq(i).text().replace(/\[|\]/g, "") <= formattedDate)) {
                 break;
             }
         }
@@ -685,8 +694,9 @@ var BattleshipsClass = function() {
         }, 'slow');
     }
 
-    function game_start(turn) {
-        game_started = true;
+    function start_game(turn) {
+        player_started = true;
+        game_started = player_started && other_started;
         $("#start").prop('disabled', true);
         $("#random_shot, #random_ships").toggle();
         set_turn(turn);
@@ -719,7 +729,7 @@ var BattleshipsClass = function() {
         $("#random_shot").prop('disabled', !isMe);
     }
 
-    function ships_check($ships) {
+    function check_ships($ships) {
         var ships_array = $ships.map(function() {
             return $battleground.index(this);
         }).toArray();
@@ -849,7 +859,7 @@ var BattleshipsClass = function() {
             }
         }
 
-        if (ships_check($battleground.board(0).filter(".ship")) == false) {
+        if (check_ships($battleground.board(0).filter(".ship")) == false) {
             if (event.data && event.data.retry > 0) {
                 $battleground.board(0).removeClass("ship");
                 event.data.retry--;

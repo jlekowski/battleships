@@ -41,7 +41,6 @@ class Misc
      */
     public static function isRootDir()
     {
-        // TODO - SERVER as a param
         $urlInfo     = parse_url(self::getRequestedUrl());
         $urlPathInfo = pathinfo($urlInfo['path']);
 

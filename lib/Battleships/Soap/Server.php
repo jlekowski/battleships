@@ -47,6 +47,9 @@ class Server
         }
 
         return $oData;
+//        $oFormatter = new Formatter($this->oManager);
+//
+//        return $oFormatter->getForGame();
     }
 
     public function updateName($hash, $playerName)
@@ -94,6 +97,6 @@ class Server
         $this->oManager->initGame($hash);
         $result = $this->oManager->addChat($text);
 
-        return Misc::getUtcTime()->modify($this->oManager->oData->getTimezoneOffset() . "hour")->format("Y-m-d H:i:s");
+        return Misc::getUtcTime()->getTimestamp();
     }
 }

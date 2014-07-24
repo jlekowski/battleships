@@ -17,14 +17,15 @@ use Battleships\Exception\GameFlowException;
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
- * @TODO       getBattle() - battleground details not working with the front-end
- * @TODO       instead of $updates['lastIdEvents'] store on the server side last given update
- * @TODO       in_array() instead of array_search()
- * @TODO       startGame() coords check to checkShips()?
+ * @todo       getShips() is unused (maybe should be?)
  * @TODO       start_game event - true instead of ships?
+ * @todo       Separate classes for DB tables (i.e. games and events)
+ * @TODO       getBattle() - battleground details not working with the front-end
  * @todo       maybe PDO exec instead of query
- * @todo       last shot and whose turn it is
+ * @todo       last shot mark
  * @todo       generate hash, edit it in DB and redirect to the new (initGame)
+ * @todo       rather than hash, allow joining players who already joined
+ * @TODO       instead of $updates['lastIdEvents'] store on the server side last given update
  *
  *
  */
@@ -295,10 +296,9 @@ class Manager
             $this->oData->setLastIdEvents($lastIdEvents);
 
             if ($value['event_type'] == "chat") {
-                $eventDate = new \DateTime("@" . $value['timestamp']);
                 $eventValue = array(
                     'text' => $value['event_value'],
-                    'time' => $eventDate->modify($this->oData->getTimezoneOffset() . "hour")->format("Y-m-d H:i:s")
+                    'timestamp' => $value['timestamp']
                 );
             } elseif ($value['event_type'] == 'start_game') {
                 $eventValue = true;
@@ -361,7 +361,6 @@ class Manager
      *
      * @param string $ships Ships set by the player (Example: "A1,B4,J10,..."))
      * @throws \Battleships\Exception\InvalidShipsException
-     * @todo refactor all startGame() results (used to return bool)
      */
     public function startGame($ships)
     {
@@ -398,7 +397,7 @@ class Manager
         $this->addEvent("shot", $coords);
 
         // If other ship at these coordinates (if hit)
-        if (array_search($coords, $this->oData->getOtherShips()) === false) {
+        if (!in_array($coords, $this->oData->getOtherShips())) {
             $result = "miss";
         } elseif ($this->checkSunk($coords)) {
             // If other ship is sunk after this hit
@@ -487,7 +486,7 @@ class Manager
      * Returns all chats for a requested game
      *
      * @return array Chats for the game
-     *         (Example: [0 => ['name' => {player_name}, 'text' => "Hi!", 'time' => "2012-11-05 23:34"],  ...])
+     *         (Example: [0 => ['player' => {playerNumber}, 'text' => "Hi!", 'timestamp' => 1406404068],  ...])
      */
     public function getChats()
     {
@@ -496,13 +495,10 @@ class Manager
         $result = $this->getEvents("chat", true);
         // raw events result requested to build a custom array with chats' details
         foreach ($result as $value) {
-            $eventDate = new \DateTime("@" . $value['timestamp']);
             $chats[] = array(
-                'name' => ($value['player'] == $this->oData->getPlayerNumber()
-                    ? $this->oData->getPlayerName()
-                    : $this->oData->getOtherName()),
+                'player' => (int)$value['player'],
                 'text' => $value['event_value'],
-                'time' => $eventDate->modify($this->oData->getTimezoneOffset() . "hour")->format("Y-m-d H:i:s")
+                'timestamp' => $value['timestamp']
             );
         }
 
@@ -561,13 +557,15 @@ class Manager
      * Get the current battle record (players' battlegrounds)
      *
      * Example: <br />
-     * ['playerGround' => ['A1' => "miss", 'C4' => "hit", ...], 'otherGround' => ['J10' => "sunk", ...]]
+     * {'playerGround': {'A1': "miss", 'C4': "hit", ...}, 'otherGround': {'J10': "sunk", ...}}
      *
-     * @return array
+     * @return \stdClass
      */
     public function getBattle()
     {
-        $battle = array('playerGround' => array(), 'otherGround' => array());
+        $battle = new \stdClass();
+        $battle->playerGround = new \stdClass();
+        $battle->otherGround = new \stdClass();
         $prefixes = array(array("player", "other"), array("other", "player"));
 
         $ships = array(
@@ -582,7 +580,7 @@ class Manager
 
         foreach ($prefixes as $prefix) {
             foreach ($shots[ $prefix[0] ] as $value) {
-                if (array_search($value, $ships[ $prefix[1] ]) === false) {
+                if (!in_array($value, $ships[ $prefix[1] ])) {
                     $shot = "miss";
                 } elseif ($this->checkSunk($value, $prefix[0])) {
                     $shot = "sunk";
@@ -590,13 +588,13 @@ class Manager
                     $shot = "hit";
                 }
 
-                $battle[$prefix[1].'Ground'][$value] = $shot;
+                $battle->{$prefix[1].'Ground'}->{$value} = $shot;
             }
         }
 
         foreach ($ships['player'] as $ship) {
-            if (!array_key_exists($ship, $battle['playerGround'])) {
-                $battle['playerGround'][$ship] = "ship";
+            if (!property_exists($battle->playerGround, $ship)) {
+                $battle->playerGround->{$ship} = "ship";
             }
         }
 

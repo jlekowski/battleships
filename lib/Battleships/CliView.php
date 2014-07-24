@@ -2,7 +2,7 @@
 
 namespace Battleships;
 
-use Battleships\Soap\Client;
+use Battleships\ClientInterface;
 use Battleships\Game\Manager;
 
 /**
@@ -22,9 +22,9 @@ class CliView
     private $runView;
 
     /**
-     * @param \Battleships\Soap\Client $oClient
+     * @param \Battleships\ClientInterface $oClient
      */
-    public function __construct(Client $oClient)
+    public function __construct(ClientInterface $oClient)
     {
         $this->oClient = $oClient;
     }
@@ -38,42 +38,52 @@ class CliView
             if (empty($this->oData)) {
                 $command = "initGame";
             } elseif (count($this->oData->getPlayerShips()) == 0) {
-                $command = "startGame";
+                $command = "addShips";
             } elseif ($this->oData->getOtherStarted() && $this->oData->isMyTurn()) {
                 $command = "addShot";
             } else {
-                $command = "update";
+                $command = "getUpdates";
             }
 
-            $this->runCommand($command);
+            try {
+                $this->runCommand($command);
+            } catch (\Exception $e) {
+                Misc::log($e);
+                if (!empty($this->oData)) {
+                    $this->runCommandShow();
+                }
+                $output = $e->getMessage();
+                $this->outputsAppend($output);
+            }
+            $this->outputsPrint();
         }
     }
 
-    public function runCommand($command)
+    private function runCommand($command)
     {
         switch ($command) {
             case "show":
-                $result = $this->runCommandShow();
+                $this->runCommandShow();
                 break;
 
             case "nameUpdate":
-                $result = $this->runCommandNameUpdate();
+                $this->runCommandNameUpdate();
                 break;
 
             case "initGame":
-                $result = $this->runCommandInitGame();
+                $this->runCommandInitGame();
                 break;
 
-            case "startGame":
-                $result = $this->runCommandStartGame();
+            case "addShips":
+                $this->runCommandAddShips();
                 break;
 
             case "addShot":
-                $result = $this->runCommandAddShot();
+                $this->runCommandAddShot();
                 break;
 
-            case "update":
-                $result = $this->runCommandUpdate();
+            case "getUpdates":
+                $this->runCommandGetUpdates();
                 break;
 
             case "":
@@ -95,14 +105,11 @@ class CliView
                 $this->outputsAppend("exit - exit the game");
                 break;
         }
-
-        $this->outputsPrint();
-        return $result;
     }
 
     private function runCommandShow()
     {
-        $output = $this->showBattlegroud();
+        $output = $this->getBattlegroud();
         $this->outputsAppend($output);
     }
 
@@ -116,10 +123,16 @@ class CliView
     private function runCommandInitGame()
     {
         $hash = $this->getInput("Provide game hash or press ENTER to start a new game");
-        $this->oData = $this->oClient->getGame($hash);
+        if ($hash === "") {
+            $name = $this->getInput("What's your name?");
+            $this->oData = $this->oClient->createGame($name);
+        } else {
+            $this->oData = $this->oClient->getGame($hash);
+        }
+
         $this->runCommandShow();
 
-        if (!$hash) {
+        if ($hash !== "") {
             $output = $this->oData->getPlayerName() . " hash is: " . $this->oData->getPlayerHash();
             $this->outputsAppend($output);
         }
@@ -130,15 +143,13 @@ class CliView
         }
     }
 
-    private function runCommandStartGame()
+    private function runCommandAddShips()
     {
         $ships = strtoupper($this->getInput("Set your ships"));
-        $result = $this->oClient->startGame($this->oData, $ships);
+        $this->oClient->addShips($this->oData, $ships);
         $this->runCommandShow();
-        if (!$result) {
-            $output = "Ships set incorrectly";
-            $this->outputsAppend($output);
-        }
+        $output = "Ships set incorrectly";
+        $this->outputsAppend($output);
     }
 
     private function runCommandAddShot()
@@ -146,11 +157,11 @@ class CliView
         $shot = strtoupper($this->getInput("Shoot"));
         $result = $this->oClient->addShot($this->oData, $shot);
         $this->runCommandShow();
-        $output = $result ? $shot . ": " . $result : "Incorrect shot";
+        $output = $shot . ": " . $result;
         $this->outputsAppend($output);
     }
 
-    private function runCommandUpdate()
+    private function runCommandGetUpdates()
     {
         $oldOtherName = $this->oData->getOtherName();
         echo PHP_EOL . "Waiting for " . $oldOtherName . "...";
@@ -181,7 +192,7 @@ class CliView
                         break;
 
                     case "chat":
-                        $output = $this->oData->getOtherName() . " sent message: " . $update['text'];
+                        $output = $this->oData->getOtherName() . " sent message: " . $update->text;
                         break;
 
                     default:
@@ -196,7 +207,7 @@ class CliView
         }
     }
 
-    private function showBattlegroud()
+    private function getBattlegroud()
     {
         $marks = array('ship' => "S", 'miss' => ".", 'hit' => "x", 'sunk' => "X");
         $battle = $this->oData->battle;
@@ -219,8 +230,8 @@ class CliView
                     $board .= sprintf(" % 2s |", $text);
                 } elseif ($j > 0 && $i > 0) {
                     $coords = Manager::$axisY[($i - 1)] . Manager::$axisX[($j - 1)];
-                    $text = array_key_exists($coords, $battle['playerGround'])
-                        ? $marks[ $battle['playerGround'][$coords] ]
+                    $text = property_exists($battle->playerGround, $coords)
+                        ? $marks[ $battle->playerGround->{$coords} ]
                         : "";
                     $board .= sprintf(" % 1s |", $text);
                 }
@@ -239,8 +250,8 @@ class CliView
                     $board .= sprintf(" % 2s |", $text);
                 } elseif ($j > 0 && $i > 0) {
                     $coords = Manager::$axisY[($i - 1)] . Manager::$axisX[($j - 1)];
-                    $text = array_key_exists($coords, $battle['otherGround'])
-                        ? $marks[ $battle['otherGround'][$coords] ]
+                    $text = property_exists($battle->otherGround, $coords)
+                        ? $marks[ $battle->otherGround->{$coords} ]
                         : "";
                     $board .= sprintf(" % 1s |", $text);
                 }

@@ -18,12 +18,21 @@ try {
     $apiRequest->addShips($game);
     // add chats
     $apiRequest->addChats($game);
-    // getUpdates
+    // get updates
     $apiRequest->getUpdates($game);
-
+    // get other game
+    $otherGame = $apiRequest->getOtherGame($game);
+    // add other ships
+    $apiRequest->addShips($otherGame);
+    // add shot
+    $apiRequest->addShots($game);
+    // get other updates
+    $apiRequest->getOtherUpdates($otherGame);
 
 } catch (Exception $e) {
-    print_r($game);
+    if (isset($game)) {
+        print_r($game);
+    }
     exit("ERROR: " . $e->getMessage() . PHP_EOL);
 }
 
@@ -114,6 +123,10 @@ class ApiRequest
             throw new E2eException("Incorrect player ships: " . print_r($gameData->playerShips, true));
         }
 
+        if (isset($gameData->otherShips)) {
+            throw new E2eException("Other 2 ships should not be set: " . print_r($gameData->otherShips, true));
+        }
+
         if ($gameData->otherJoined !== false) {
             throw new E2eException("Incorrect other joined: " . $gameData->otherJoined);
         }
@@ -123,14 +136,85 @@ class ApiRequest
         }
 
         $emptyBattle = new stdClass();
-        $emptyBattle->playerGround = array();
-        $emptyBattle->otherGround = array();
+        $emptyBattle->playerGround = new stdClass();
+        $emptyBattle->otherGround = new stdClass();
         if ($gameData->battle != $emptyBattle) {
             throw new E2eException("Incorrect battle: " . print_r($gameData->battle, true));
         }
 
         if ($gameData->chats !== array()) {
             throw new E2eException("Incorrect chats: " . print_r($gameData->chats, true));
+        }
+    }
+
+    public function getOtherGame(stdClass $game)
+    {
+        $oRequestDetails = new RequestDetails("/games/" . $game->otherHash, "GET");
+        $gameData = $this->call($oRequestDetails);
+        $this->validateOtherGameDetails($gameData, $game);
+
+        return $gameData;
+    }
+
+    private function validateOtherGameDetails(stdClass $gameData, stdClass $game)
+    {
+        if ($gameData->playerName !== $game->otherName) {
+            throw new E2eException(sprintf("Incorrect player 2 name: %s instead of %s", $gameData->playerName, $game->otherName));
+        }
+
+        if ($gameData->otherName !== $game->playerName) {
+            throw new E2eException(sprintf("Incorrect other 2 name: %s instead of %s", $gameData->otherName, $game->playerName));
+        }
+
+        if ($gameData->playerHash !== $game->otherHash) {
+            throw new E2eException(sprintf("Incorrect player 2 hash: %s instead of %s", $gameData->playerHash, $game->otherHash));
+        }
+
+        if ($gameData->otherHash !== "") {
+            throw new E2eException(sprintf("Other 2 hash should be empty: %s instead", $gameData->otherHash));
+        }
+
+        if ($gameData->playerNumber !== 2) {
+            throw new E2eException(sprintf("Incorrect player 2 number: %s instead of 2", $gameData->playerNumber));
+        }
+
+        if ($gameData->otherNumber !== 1) {
+            throw new E2eException(sprintf("Incorrect other 2 number: %s instead of 1", $gameData->otherNumber));
+        }
+
+        if ($gameData->whoseTurn !== 1) {
+            throw new E2eException(sprintf("Incorrect player 2 turn: %s instead of 1", $gameData->whoseTurn));
+        }
+
+        if ($gameData->playerShips !== array()) {
+            throw new E2eException("Incorrect player 2 ships: " . print_r($gameData->playerShips, true));
+        }
+
+        if (isset($gameData->otherShips)) {
+            throw new E2eException("Other 2 ships should not be set: " . print_r($gameData->otherShips, true));
+        }
+
+        if ($gameData->otherJoined !== true) {
+            throw new E2eException("Incorrect other 2 joined: " . $gameData->otherJoined);
+        }
+
+        if ($gameData->otherStarted !== true) {
+            throw new E2eException("Incorrect other 2 started: " . $gameData->otherStarted);
+        }
+
+        $emptyBattle = new stdClass();
+        $emptyBattle->playerGround = new stdClass();
+        $emptyBattle->otherGround = new stdClass();
+        if ($gameData->battle != $emptyBattle) {
+            throw new E2eException("Incorrect 2 battle: " . print_r($gameData->battle, true));
+        }
+
+        if (count($gameData->chats) !== 1) {
+            throw new E2eException("Incorrect 2 number of chats: " . print_r(array($gameData->chats, $game->chats), true));
+        }
+
+        if (($gameData->chats[0]->player !== $game->chats[0]->player) || ($gameData->chats[0]->text !== $game->chats[0]->text)) {
+            throw new E2eException("Incorrect 2 chats: " . print_r(array($gameData->chats, $game->chats), true));
         }
     }
 
@@ -161,17 +245,35 @@ class ApiRequest
     public function addChats(stdClass $game)
     {
         $chatData = new stdClass();
-        $chatData->chat = "Test chat";
+        $chatData->text = "Test chat";
         $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/chats", "POST", $chatData);
         $result = $this->call($oRequestDetails);
         $this->validateDate($result);
-        $game->chats[] = array(
-            'name' => $game->playerName,
-            'text' => $chatData->chat,
-            'time' => $result
-        );
+        $chatData->player = $game->playerNumber;
+        $chatData->timestamp = $result;
+        $game->chats[] = $chatData;
 
         return $result;
+    }
+
+    public function addShots(stdClass $game)
+    {
+        $shotData = new stdClass();
+        $shots = array('A1' => "sunk", 'C2' => "hit", 'D2' => "sunk", 'J10' => "miss");
+
+        foreach ($shots as $shot => $expectedResult) {
+            $shotData->shot = $shot;
+            $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/shots", "POST", $shotData);
+            $result = $this->call($oRequestDetails);
+            $this->validateAddShots($result, $expectedResult);
+        }
+    }
+
+    private function validateAddShots($result, $expected)
+    {
+        if ($result !== $expected) {
+            throw new E2eException(sprintf("Incorrect shot result: %s instead of %s", $result, $expected));
+        }
     }
 
     public function validateDate($date)
@@ -186,8 +288,24 @@ class ApiRequest
         $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/updates/" . $game->lastIdEvents, "GET");
         $result = $this->call($oRequestDetails);
         $this->validateEmptyArray($result);
+    }
 
-        return $result;
+    public function getOtherUpdates(stdClass $game)
+    {
+        $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/updates/" . $game->lastIdEvents, "GET");
+        $result = $this->call($oRequestDetails);
+        $this->validateOtherGetUpdates($result, $game);
+    }
+
+    private function validateOtherGetUpdates(stdClass $result, stdClass $game)
+    {
+        if ($result->shot !== array("A1", "C2", "D2", "J10")) {
+            throw new E2eException("Incorrect shot updates: " . print_r($result->shots, true));
+        }
+
+        if ($result->lastIdEvents[0] - $game->lastIdEvents !== 6) {
+            throw new E2eException(sprintf("Incorrect number of events added: %s - %s", $result->lastIdEvents[0], $game->lastIdEvents));
+        }
     }
 
     private function validateEmptyArray($array)
@@ -211,6 +329,9 @@ class ApiRequest
         curl_setopt($this->ch, CURLOPT_URL, $this->baseUrl . $oRequestDetails->getRequest());
 
         $curlResponse = curl_exec($this->ch);
+        if ($curlResponse === false) {
+            throw new E2eException(curl_error($this->ch));
+        }
         $response = Misc::jsonDecode($curlResponse);
         if ($response->error !== null) {
             throw new E2eException(print_r($response->error, true));

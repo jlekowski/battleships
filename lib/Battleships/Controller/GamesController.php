@@ -53,7 +53,7 @@ class GamesController extends Controller
 
     public function addChatsAction()
     {
-        $this->oManager->addChat($this->data->chat);
+        $this->oManager->addChat($this->data->text);
 
         $this->result = Misc::getUtcTime()->format("Y-m-d H:i:s");
     }

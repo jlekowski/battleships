@@ -23,6 +23,8 @@ define('LOG_FILE',     "error.log"); // change here if your db directory is open
 define('WSDL_FILE',    SOAP_PATH . "battleships.wsdl");
 define('WSDL_HOST',    "http://battleships.localhost/"); // change for your host
 define('WSDL_URL',     WSDL_HOST . "/SOAP/battleships.wsdl");
+// define REST server
+define('REST_URL',     "http://battleships.localhost"); // change for your host
 
 // define DB settings
 define('DB_TYPE',      "SQLITE");

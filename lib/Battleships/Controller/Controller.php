@@ -47,8 +47,6 @@ abstract class Controller
 
     private function runAction()
     {
-//        echo "<pre>" . print_r($this->actionName . "Action", 1);
-//        exit;
         $this->{$this->actionName . "Action"}();
     }
 

@@ -2,7 +2,7 @@
 
 namespace Battleships\Exception;
 
-class InvalidCoordinatesException extends \InvalidShipsException
+class InvalidCoordinatesException extends InvalidShipsException
 {
     protected $code = 161;
 

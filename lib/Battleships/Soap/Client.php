@@ -2,6 +2,7 @@
 
 namespace Battleships\Soap;
 
+use Battleships\ClientInterface;
 use Battleships\Game\Data;
 use Battleships\Misc;
 
@@ -14,7 +15,7 @@ use Battleships\Misc;
  * @since      File available since Release 0.5
  *
  */
-class Client
+class Client implements ClientInterface
 {
     /**
      * @var \SoapClient
@@ -69,7 +70,7 @@ class Client
                 $oData->setPlayerShips($ships);
                 $shipsArray = explode(",", $ships);
                 foreach ($shipsArray as $value) {
-                    $oData->battle['playerGround'][$value] = "ship";
+                    $oData->battle->playerGround->{$value} = "ship";
                 }
             }
         } catch (\SoapFault $e) {
@@ -85,7 +86,7 @@ class Client
             $result = $this->soapClient->addShot($oData->getPlayerHash(), $coords);
             if ($result) {
                 $oData->appendPlayerShots($coords);
-                $oData->battle['otherGround'][$coords] = $result;
+                $oData->battle->otherGround->{$coords} = $result;
                 $whoseTurn = $result == "miss" ? $oData->getOtherNumber() : $oData->getPlayerNumber();
                 $oData->setWhoseTurn($whoseTurn);
             }
@@ -139,7 +140,7 @@ class Client
                     $whoseTurn = $oData->getPlayerNumber();
                 }
 
-                $oData->battle['playerGround'][ $update ] = $shotResult;
+                $oData->battle->playerGround->{$update} = $shotResult;
                 $oData->setWhoseTurn($whoseTurn);
                 break;
 

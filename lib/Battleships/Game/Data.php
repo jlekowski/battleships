@@ -41,10 +41,13 @@ class Data
             return;
         }
 
-        $properties = array_keys(get_class_vars(__CLASS__));
-        foreach ($properties as $property) {
+        foreach ($this as $property => &$value) {
             if (property_exists($game, $property)) {
-                $this->$property = $game->$property;
+                $gameValue = $game->$property;
+                if (in_array($property, array("playerShips", "otherShips")) && is_array($gameValue)) {
+                    $gameValue = implode(",", $gameValue);
+                }
+                $value = $gameValue;
             }
         }
     }
@@ -140,7 +143,7 @@ class Data
 
     public function setPlayerShips($playerShips)
     {
-        $this->playerShips = $playerShips;
+        $this->playerShips = is_array($playerShips) ? implode(",", $playerShips) : $playerShips;
     }
 
     /**
@@ -154,7 +157,7 @@ class Data
 
     public function setOtherShips($otherShips)
     {
-        $this->otherShips = $otherShips;
+        $this->otherShips = is_array($otherShips) ? implode(",", $otherShips) : $otherShips;
     }
 
     /**
