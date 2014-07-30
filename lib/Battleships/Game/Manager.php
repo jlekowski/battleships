@@ -254,7 +254,7 @@ class Manager
     public function updateName($playerName)
     {
         $query = sprintf("UPDATE games SET player%d_name = ? WHERE id = ?", $this->oData->getPlayerNumber());
-        $result = $this->oDB->fQuery($query, array($playerName, $this->oData->getIdGames()));
+        $this->oDB->fQuery($query, array($playerName, $this->oData->getIdGames()));
 
         $this->addEvent('name_update', $playerName);
     }
@@ -593,7 +593,7 @@ class Manager
         }
 
         foreach ($ships['player'] as $ship) {
-            if (!property_exists($battle->playerGround, $ship)) {
+            if (!isset($battle->playerGround->{$ship})) {
                 $battle->playerGround->{$ship} = "ship";
             }
         }
@@ -678,7 +678,8 @@ class Manager
 
             return $coordsInfo['position_y'] . $coordsInfo['position_x'];
         };
-        $shipsArray = array_map($toIndex, explode(",", $ships));
+        // array_map doesn't like exceptions in callback
+        $shipsArray = @array_map($toIndex, explode(",", $ships));
         sort($shipsArray);
 
         // required number of masts

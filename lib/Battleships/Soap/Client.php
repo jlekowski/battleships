@@ -35,46 +35,46 @@ class Client implements ClientInterface
     }
 
     /**
+     * Create game
+     * @param string $name
+     * @return \Battleships\Game\Data
+     */
+    public function createGame($name)
+    {
+        $game = $this->soapClient->getGame();
+
+        return new Data($game);
+    }
+
+    /**
      *
      * @param string $hash
-     * @return Battleships\Game\Data
+     * @return \Battleships\Game\Data
      */
     public function getGame($hash)
     {
-        try {
-            $game = $this->soapClient->getGame($hash);
-        } catch (\SoapFault $e) {
-            Misc::log($e);
-        }
+        $game = $this->soapClient->getGame($hash);
 
         return new Data($game);
     }
 
     public function updateName(Data $oData, $playerName)
     {
-        try {
-            $result = $this->soapClient->updateName($oData->getPlayerHash(), $playerName);
-            if ($result) {
-                $oData->setPlayerName($playerName);
-            }
-        } catch (\SoapFault $e) {
-            Misc::log($e);
-        }
+        $this->soapClient->updateName($oData->getPlayerHash(), $playerName);
+        $oData->setPlayerName($playerName);
     }
 
-    public function startGame(Data $oData, $ships)
+    /**
+     * Add ships to start game
+     * @param \Battleships\Game\Data $oData
+     * @param array $ships
+     */
+    public function addShips(Data $oData, array $ships)
     {
-        try {
-            $result = $this->soapClient->startGame($oData->getPlayerHash(), $ships);
-            if ($result) {
-                $oData->setPlayerShips($ships);
-                $shipsArray = explode(",", $ships);
-                foreach ($shipsArray as $value) {
-                    $oData->battle->playerGround->{$value} = "ship";
-                }
-            }
-        } catch (\SoapFault $e) {
-            Misc::log($e);
+        $result = $this->soapClient->startGame($oData->getPlayerHash(), implode(",", $ships));
+        $oData->setPlayerShips($ships);
+        foreach ($ships as $value) {
+            $oData->battle->playerGround->{$value} = "ship";
         }
 
         return $result;
@@ -82,28 +82,28 @@ class Client implements ClientInterface
 
     public function addShot(Data $oData, $coords)
     {
-        try {
-            $result = $this->soapClient->addShot($oData->getPlayerHash(), $coords);
-            if ($result) {
-                $oData->appendPlayerShots($coords);
-                $oData->battle->otherGround->{$coords} = $result;
-                $whoseTurn = $result == "miss" ? $oData->getOtherNumber() : $oData->getPlayerNumber();
-                $oData->setWhoseTurn($whoseTurn);
-            }
-        } catch (\SoapFault $e) {
-            Misc::log($e);
-        }
+        $result = $this->soapClient->addShot($oData->getPlayerHash(), $coords);
+        $oData->appendPlayerShots($coords);
+        $oData->battle->otherGround->{$coords} = $result;
+        $whoseTurn = $result == "miss" ? $oData->getOtherNumber() : $oData->getPlayerNumber();
+        $oData->setWhoseTurn($whoseTurn);
 
         return $result;
     }
 
+    /**
+     * Add chat
+     * @param \Battleships\Game\Data $oData
+     * @param string $text
+     */
+    public function addChat(Data $oData, $text)
+    {
+        // TODO: Implement addChat() method.
+    }
+
     public function getUpdates(Data $oData)
     {
-        try {
-            $result = $this->soapClient->getUpdates($oData->getPlayerHash(), $oData->getLastIdEvents());
-        } catch (\SoapFault $e) {
-            Misc::log($e);
-        }
+        $result = $this->soapClient->getUpdates($oData->getPlayerHash(), $oData->getLastIdEvents());
 
         foreach ($result as $action => $updates) {
             foreach ($updates as $update) {

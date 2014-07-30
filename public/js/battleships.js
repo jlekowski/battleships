@@ -56,7 +56,7 @@ var BattleshipsClass = function() {
                 custom_log(soapRequest.toString());
             },
             error: function(soapResponse) {
-                custom_log(soapResponse);
+                custom_log(soapResponse.toString());
             }
         });
 
@@ -157,12 +157,7 @@ var BattleshipsClass = function() {
                 ships: shipsString
             },
             success: function(soapResponse) {
-                var result = soap_to_object(soapResponse, "result");
-                custom_log(result);
-
-                if (result !== true) {
-                    return false;
-                }
+                custom_log(soapResponse.toString());
 
                 start_game($("#playerNumber").val() == 1);
             }
@@ -194,12 +189,7 @@ var BattleshipsClass = function() {
                 playerName: $('<span>').text(player_name).html()
             },
             success: function(soapResponse) {
-                var result = soap_to_object(soapResponse, "result");
-                custom_log(result);
-
-                if (result !== true) {
-                    return false;
-                }
+                custom_log(soapResponse.toString());
 
                 $input.hide().siblings("span").text(player_name).show();
             }
@@ -255,10 +245,6 @@ var BattleshipsClass = function() {
                 custom_log(result);
                 $chatbox.prop('disabled', false);
 
-                if (result <= 0) {
-                    return false;
-                }
-
                 chat_append(text, $("#playerNumber").val(), result);
                 $chatbox.val("");
             }
@@ -296,17 +282,16 @@ var BattleshipsClass = function() {
                 var result = soap_to_object(soapResponse, "result");
                 custom_log(result);
 
-                if (result === "") {
-                    set_turn(true);
-                    return false;
-                }
-
                 set_turn(result != "miss");
                 mark_shot(1, coords, result);
 
                 if (result == "sunk") {
                     check_game_end();
                 }
+            },
+            error: function(soapResponse) {
+                custom_log(soapResponse.toString());
+                set_turn(true);
             }
         });
     }
@@ -946,10 +931,10 @@ var BattleshipsClass = function() {
             return true;
         }
 
-        var log_me = ($.type(log) != "object") ? log : ($.browser.mozilla ? log.toSource() : JSON.stringify(log));
+        var log_me = ($.type(log) !== "object") ? log : JSON.stringify(log);
 
         $("div.log").clearQueue().append($("<p>").text(log_me)).animate({
-            scrollTop: $("div.log").prop("scrollHeight")
+            scrollTop: $("div.log").prop('scrollHeight')
         }, 'slow');
 
         console.log(log);

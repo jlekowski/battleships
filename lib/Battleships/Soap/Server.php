@@ -2,6 +2,7 @@
 
 namespace Battleships\Soap;
 
+use Battleships\Game\Formatter;
 use Battleships\Game\Manager;
 use Battleships\Misc;
 
@@ -17,7 +18,7 @@ use Battleships\Misc;
 class Server
 {
     /**
-     * @var Battleships\Game\Manager
+     * @var \Battleships\Game\Manager
      */
     private $oManager;
 
@@ -32,38 +33,21 @@ class Server
     public function getGame($hash = "", $timezoneOffset = 0)
     {
         $this->oManager->initGame($hash);
-        $oData = $this->oManager->oData;
-        $oData->battle = $this->oManager->getBattle();
-        $oData->chats = $this->oManager->getChats();
-        // so that no one could see other player's ships
-        $oData->setOtherShips("");
-        // if other player joined, don't show his new hash
-        if ($oData->getOtherJoined()) {
-            $oData->setOtherHash("");
-        }
+        $oFormatter = new Formatter($this->oManager);
 
-        if (abs($timezoneOffset) <= 14) {
-            $oData->setTimezoneOffset($timezoneOffset * 60 * 60);
-        }
-
-        return $oData;
-//        $oFormatter = new Formatter($this->oManager);
-//
-//        return $oFormatter->getForGame();
+        return $oFormatter->getForGame($hash === "");
     }
 
     public function updateName($hash, $playerName)
     {
         $this->oManager->initGame($hash);
         $this->oManager->updateName($playerName);
-        return true;
     }
 
     public function startGame($hash, $ships)
     {
         $this->oManager->initGame($hash);
         $this->oManager->startGame(strtoupper($ships));
-        return true;
     }
 
     public function addShot($hash, $coords)
@@ -95,7 +79,7 @@ class Server
     public function addChat($hash, $text)
     {
         $this->oManager->initGame($hash);
-        $result = $this->oManager->addChat($text);
+        $this->oManager->addChat($text);
 
         return Misc::getUtcTime()->getTimestamp();
     }

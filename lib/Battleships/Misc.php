@@ -12,6 +12,7 @@ use Battleships\Exception\JsonException;
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.5
  *
+ * @todo       Implement PSR-3 Logger (and handle errors)
  */
 class Misc
 {
@@ -95,8 +96,8 @@ class Misc
     public static function log($log)
     {
         if ($log instanceof \Exception) {
-            $logMsg = sprintf("Error (code: %d, message: %s, type: %s)", $log->getCode(), $log->getMessage(),
-                get_class($log));
+            $code = $log instanceof \SoapFault ? $log->faultcode : $log->getCode();
+            $logMsg = sprintf("Error (code: %d, message: %s, type: %s)", $code, $log->getMessage(), get_class($log));
         } elseif (is_array($log) || is_object($log)) {
             $logMsg = print_r($log, true);
         } else {
