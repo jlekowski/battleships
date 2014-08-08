@@ -43,6 +43,7 @@ class Formatter
         $formatted->otherName = $oData->getOtherName();
         $formatted->playerNumber = $oData->getPlayerNumber();
         $formatted->otherNumber = $oData->getOtherNumber();
+        $formatted->playerStarted = $oData->getPlayerStarted();
         $formatted->lastIdEvents = $oData->getLastIdEvents();
         $formatted->whoseTurn = $oData->getWhoseTurn();
         if (!$isNew) {

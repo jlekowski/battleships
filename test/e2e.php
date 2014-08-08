@@ -36,7 +36,6 @@ try {
     exit("ERROR: " . $e->getMessage() . PHP_EOL);
 }
 
-//print_r($game);
 exit("OK\n");
 
 class ApiRequest
@@ -94,6 +93,10 @@ class ApiRequest
             throw new E2eException("Incorrect other number: " . $game->otherNumber);
         }
 
+        if ($game->playerStarted !== false) {
+            throw new E2eException("Incorrect player started: " . $game->playerStarted);
+        }
+
         if ($game->lastIdEvents !== 0) {
             throw new E2eException("Incorrect last id event: " . $game->lastIdEvents);
         }
@@ -129,6 +132,10 @@ class ApiRequest
 
         if ($gameData->otherJoined !== false) {
             throw new E2eException("Incorrect other joined: " . $gameData->otherJoined);
+        }
+
+        if ($gameData->playerStarted !== false) {
+            throw new E2eException("Incorrect player started: " . $gameData->playerStarted);
         }
 
         if ($gameData->otherStarted !== false) {
@@ -224,7 +231,7 @@ class ApiRequest
         $nameData->name = "Updated Name";
         $oRequestDetails = new RequestDetails("/games/" . $game->playerHash, "PUT", $nameData);
         $result = $this->call($oRequestDetails);
-        $this->validateTrueResult($result, __FUNCTION__);
+        $this->validateNullResult($result, __FUNCTION__);
         $game->playerName = $nameData->name;
 
         return $result;
@@ -236,7 +243,7 @@ class ApiRequest
         $shipsData->ships = array("A1","C2","D2","F2","H2","J2","F5","F6","I6","J6","A7","B7","C7","F7","F8","I9","J9","E10","F10","G10");
         $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/ships", "POST", $shipsData);
         $result = $this->call($oRequestDetails);
-        $this->validateTrueResult($result, __FUNCTION__);
+        $this->validateNullResult($result, __FUNCTION__);
         $game->playerShips = $shipsData->ships;
 
         return $result;
@@ -248,7 +255,7 @@ class ApiRequest
         $chatData->text = "Test chat";
         $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/chats", "POST", $chatData);
         $result = $this->call($oRequestDetails);
-        $this->validateDate($result);
+        $this->validateTimestamp($result);
         $chatData->player = $game->playerNumber;
         $chatData->timestamp = $result;
         $game->chats[] = $chatData;
@@ -276,10 +283,10 @@ class ApiRequest
         }
     }
 
-    public function validateDate($date)
+    public function validateTimestamp($timestamp)
     {
-        if (!preg_match("/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/", $date)) {
-            throw new E2eException("Incorrect chat date: " . $date);
+        if (!preg_match("/^\d{10}$/", $timestamp)) {
+            throw new E2eException("Incorrect chat timestamp: " . $timestamp);
         }
     }
 
@@ -315,9 +322,9 @@ class ApiRequest
         }
     }
 
-    private function validateTrueResult($result, $methodName)
+    private function validateNullResult($result, $methodName)
     {
-        if ($result !== true) {
+        if ($result !== null) {
             throw new E2eException("Incorrect " . $methodName . " response: " . $result);
         }
     }

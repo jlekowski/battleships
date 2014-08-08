@@ -7,15 +7,9 @@
              xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
              xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
              xmlns="http://schemas.xmlsoap.org/wsdl/">
-<!--    <types>
-        <xsd:schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="tns:Battleships">
-            <xsd:element name="test" type="xsd:string" />
-        </xsd:schema>
-    </types>-->
 
     <message name="getGameRequest">
         <part name="hash" type="xsd:string" />
-        <part name="timezoneOffset" type="xsd:integer" />
     </message>
 
     <message name="getGameResponse">

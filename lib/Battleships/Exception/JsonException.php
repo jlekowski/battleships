@@ -2,9 +2,23 @@
 
 namespace Battleships\Exception;
 
+/**
+ * JSON Exception
+ *
+ * @author     Jerzy Lekowski <jerzy@lekowski.pl>
+ * @version    0.6
+ * @link       http://dev.lekowski.pl
+ * @since      File available since Release 0.6
+ *
+ */
 class JsonException extends \Exception
 {
-    public function __construct($message = null, $code = 0, Exception $previous = null)
+    /**
+     * @param string $message
+     * @param int $code
+     * @param \Exception $previous
+     */
+    public function __construct($message = null, $code = 0, \Exception $previous = null)
     {
         $code = $code !== 0 ? $code : json_last_error();
         $message = $message !== null ? $message : $this->getErrorMsg($code);
@@ -12,6 +26,10 @@ class JsonException extends \Exception
         parent::__construct($message, $code, $previous);
     }
 
+    /**
+     * @param int $code
+     * @return string
+     */
     private function getErrorMsg($code)
     {
         /* PHP >= 5.5 */

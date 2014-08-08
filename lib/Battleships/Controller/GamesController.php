@@ -7,13 +7,27 @@ use Battleships\Game\Data;
 use Battleships\Game\Manager;
 use Battleships\Game\Formatter;
 use Battleships\Misc;
-use Battleships\Exception\InvalidHashException;
 use Battleships\Exception\MissingHashException;
 
+/**
+ * API Game Controller
+ *
+ * @author     Jerzy Lekowski <jerzy@lekowski.pl>
+ * @version    0.6
+ * @link       http://dev.lekowski.pl
+ * @since      File available since Release 0.6
+ *
+ */
 class GamesController extends Controller
 {
+    /**
+     * @var \Battleships\Game\Manager
+     */
     protected $oManager;
 
+    /**
+     * @throws MissingHashException
+     */
     public function init()
     {
         $this->oManager = new Manager(new Data(), new DB(DB_TYPE));
@@ -29,6 +43,9 @@ class GamesController extends Controller
         }
     }
 
+    /**
+     * Create new game
+     */
     public function addAction()
     {
         $this->oManager->initGame();
@@ -37,6 +54,9 @@ class GamesController extends Controller
         $this->result = $oFormatter->getForGame(true);
     }
 
+    /**
+     * Get game
+     */
     public function getAction()
     {
         $oFormatter = new Formatter($this->oManager);
@@ -44,28 +64,38 @@ class GamesController extends Controller
         $this->result = $oFormatter->getForGame();
     }
 
+    /**
+     * Update game
+     */
     public function updateAction()
     {
         $this->oManager->updateName($this->data->name);
-
-        $this->result = true;
     }
 
+    /**
+     * Add chat
+     */
     public function addChatsAction()
     {
         $this->oManager->addChat($this->data->text);
 
-        $this->result = Misc::getUtcTime()->format("Y-m-d H:i:s");
+        $this->result = Misc::getUtcTime()->getTimestamp();
     }
 
+    /**
+     * Add ship
+     * @throws \Battleships\Exception\InvalidShipsException
+     */
     public function addShipsAction()
     {
         $ships = strtoupper(implode(",", $this->data->ships));
         $this->oManager->startGame($ships);
-
-        $this->result = true;
     }
 
+    /**
+     * Add shot
+     * @throws \Battleships\Exception\GameFlowException
+     */
     public function addShotsAction()
     {
         $coords = strtoupper($this->data->shot);
@@ -74,6 +104,9 @@ class GamesController extends Controller
         $this->result = $shotResult;
     }
 
+    /**
+     * Get game updates
+     */
     public function getUpdatesAction()
     {
         $this->oManager->oData->setLastIdEvents($this->getParam('actionParam'));

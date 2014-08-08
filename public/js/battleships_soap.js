@@ -1,14 +1,12 @@
 
 /**
- * Battleships class for REST API
+ * Battleships class for SOAP API
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.6
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.6
  *
- * @todo new game without reloading - use only API to get data (e.g. hash), change to URL etc.
- * @todo think about a better way for a user to join a game
  */
 
 var BattleshipsClass = function() {
@@ -48,14 +46,15 @@ var BattleshipsClass = function() {
     var last_timeout = null;
 
     this.run = function () {
-        // default settings for AJAX calls
-        $.ajaxSetup({
-            dataType: 'json',
-            beforeSend: function(jqXHR, settings) {
-                custom_log(settings.url);
+        // default settings for SOAP calls
+        $.soap({
+            url: 'SOAP/server.php',
+            appendMethodToURL: false,
+            request: function(soapRequest) {
+                custom_log(soapRequest.toString());
             },
-            error: function(jqXHR) {
-                custom_log(jqXHR.responseJSON);
+            error: function(soapResponse) {
+                custom_log(soapResponse.toString());
             }
         });
 
@@ -145,18 +144,18 @@ var BattleshipsClass = function() {
             return false;
         }
 
-        var shipsArray = $ships.map(function() {
+        var shipsString = $ships.map(function() {
             return get_coords(this);
-        }).toArray();
+        }).toArray().join(",");
 
-        $.ajax({
-            url: 'server.php?/games/' + $("#hash").val() + '/ships',
-            method: 'POST',
-            data: JSON.stringify({
-                ships: shipsArray
-            }),
-            success: function(response) {
-                custom_log(response);
+        $.soap({
+            method: 'startGame',
+            params: {
+                hash: $("#hash").val(),
+                ships: shipsString
+            },
+            success: function(soapResponse) {
+                custom_log(soapResponse.toString());
 
                 start_game($("#playerNumber").val() == 1);
             }
@@ -181,14 +180,14 @@ var BattleshipsClass = function() {
         var $input      = $(this);
         var player_name = $input.val();
 
-        $.ajax({
-            url: 'server.php?/games/' + $("#hash").val(),
-            method: 'PUT',
-            data: JSON.stringify({
-                name: $('<span>').text(player_name).html()
-            }),
-            success: function(response) {
-                custom_log(response);
+        $.soap({
+            method: 'updateName',
+            params: {
+                hash: $("#hash").val(),
+                playerName: $('<span>').text(player_name).html()
+            },
+            success: function(soapResponse) {
+                custom_log(soapResponse.toString());
 
                 $input.hide().siblings("span").show();
                 $(".player_name").text(player_name);
@@ -234,14 +233,14 @@ var BattleshipsClass = function() {
         }
 
         $chatbox.prop('disabled', true);
-        $.ajax({
-            url: 'server.php?/games/' + $("#hash").val() + '/chats',
-            method: 'POST',
-            data: JSON.stringify({
+        $.soap({
+            method: 'addChat',
+            params: {
+                hash: $("#hash").val(),
                 text: $('<span>').text(text).html()
-            }),
-            success: function(response) {
-                var result = response.result;
+            },
+            success: function(soapResponse) {
+                var result = soap_to_object(soapResponse, "result");
                 custom_log(result);
                 $chatbox.prop('disabled', false);
 
@@ -272,14 +271,14 @@ var BattleshipsClass = function() {
 
         set_turn();
 
-        $.ajax({
-            url: 'server.php?/games/' + $("#hash").val() + '/shots/',
-            method: 'POST',
-            data: JSON.stringify({
-                shot: coords
-            }),
-            success: function(response) {
-                var result = response.result;
+        $.soap({
+            method: 'addShot',
+            params: {
+                hash: $("#hash").val(),
+                coords: coords
+            },
+            success: function(soapResponse) {
+                var result = soap_to_object(soapResponse, "result");
                 custom_log(result);
 
                 set_turn(result != "miss");
@@ -289,8 +288,8 @@ var BattleshipsClass = function() {
                     check_game_end();
                 }
             },
-            error: function(response) {
-                custom_log(response);
+            error: function(soapResponse) {
+                custom_log(soapResponse.toString());
                 set_turn(true);
             }
         });
@@ -424,11 +423,14 @@ var BattleshipsClass = function() {
             return false;
         }
 
-        updateXHR = $.ajax({
-            url: 'server.php?/games/' + $("#hash").val() + '/updates/' + lastIdEvents,
-            method: 'GET',
-            success: function(response) {
-                var result = response.result;
+        updateXHR = $.soap({
+            method: 'getUpdates',
+            params: {
+                hash: $("#hash").val(),
+                lastIdEvents: lastIdEvents
+            },
+            success: function(soapResponse) {
+                var result = soap_to_object(soapResponse, "updates");
                 custom_log(result);
 
                 if (update_execute !== false) {
@@ -490,12 +492,14 @@ var BattleshipsClass = function() {
     }
 
     function get_battle() {
-        $.ajax({
-            url: 'server.php?/games/' + $("#hash").val(),
-            method: 'GET',
-            success: function(response) {
+        $.soap({
+            method: 'getGame',
+            params: {
+                hash: $("#hash").val()
+            },
+            success: function(soapResponse) {
                 var key;
-                var gameData = response.result;
+                var gameData = soap_to_object(soapResponse, "gameData");
                 custom_log(gameData);
 
                 var battle = gameData.battle;
@@ -529,6 +533,99 @@ var BattleshipsClass = function() {
                 $("#update").triggerHandler('click');
             }
         });
+    }
+
+    // TODO: would be better if node_to_object() handled this (double children().length check)
+    function soap_to_object(soap, childName) {
+        var response;
+        var $resultNode = $(soap.toXML()).find(childName);
+
+        if ($resultNode.children().length > 0) {
+            response = {};
+            $resultNode.children().each(function() {
+                var key;
+                var value;
+                if (childName == "updates") {
+                    key = node_to_object($(this).find('key').get(0));
+                    if (key == "chat") {
+                        value = [];
+                        $(this).find('value').children().each(function() {
+                            value.push(node_to_object(this));
+                        });
+                    } else {
+                        value = node_to_object($(this).find('value').get(0));
+                    }
+                } else {
+                    key = $(this).prop('tagName');
+                    value = node_to_object(this);
+                }
+                response[key] = value;
+            });
+        } else {
+            response = node_to_object($resultNode.get(0));
+        }
+
+        return response;
+    }
+
+    function node_to_object(node) {
+        if ($(node).children().length === 0) {
+            return get_node_value(node);
+        }
+
+        var object = is_xsi_type_node(node, "array") ? [] : {};
+        if ($(node).children('key, value').length == 2) {
+            var key   = node_to_object($(node).find('key').get(0));
+            var value = node_to_object($(node).find('value').get(0));
+            object[key] = value;
+        } else {
+            $(node).children().each(function() {
+                if ($.isArray(object)) {
+                    object.push(node_to_object(this));
+                } else {
+                    $.extend(object, node_to_object(this));
+                }
+            });
+        }
+
+        return object;
+    }
+
+    function get_node_value(node) {
+        var nodeValue;
+        var nodeText = $(node).text();
+        var xsiAttributes = get_node_xsi_attributes(node);
+
+        if ($.inArray(nodeText, ["true", "false", "null"]) != -1
+            || (xsiAttributes.type && xsiAttributes.type[1] == "boolean")
+        ) {
+            nodeValue = eval(nodeText);
+        } else if (xsiAttributes.nil) {
+            nodeValue = null;
+        } else {
+            nodeValue = nodeText;
+        }
+
+        return nodeValue;
+    }
+
+    function get_node_xsi_attributes(node) {
+        var attributes = {};
+        $.each(node.attributes, function() {
+            if (!this.specified || this.prefix != "xsi") {
+                return;
+            }
+
+            attributes[this.localName] = this.value.split(":");
+        });
+
+        return attributes;
+    }
+
+    function is_xsi_type_node(node, type) {
+        var xsiAttributes = get_node_xsi_attributes(node);
+
+        return xsiAttributes.type && xsiAttributes.type[1].toLowerCase() == type.toLowerCase();
     }
 
     function chat_append(text, isMe, timestamp) {

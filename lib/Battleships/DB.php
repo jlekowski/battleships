@@ -8,7 +8,7 @@ use Battleships\Exception\DBException;
  * Database class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.5.1
+ * @version    0.6
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.3
  *
@@ -39,7 +39,6 @@ class DB extends \PDO
      * @param string $dbType Type of the database
      * @throws \InvalidArgumentException
      */
-
     public function __construct($dbType)
     {
         $this->dbType = $dbType;
@@ -95,6 +94,7 @@ class DB extends \PDO
      * Sets query using PDO prepare
      *
      * @param string $query SQL Query prepare
+     * @return void
      * @throws \Battleships\Exception\DBException
      */
     public function prepare($query)

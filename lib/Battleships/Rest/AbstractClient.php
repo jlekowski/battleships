@@ -17,7 +17,13 @@ use Battleships\Exception\ClientException;
  */
 abstract class AbstractClient
 {
+    /**
+     * @var string
+     */
     private $baseUrl;
+    /**
+     * @var resource
+     */
     private $ch;
 
     /**

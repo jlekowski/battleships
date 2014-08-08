@@ -32,7 +32,6 @@ class Data
     private $playerStarted = false;
     private $otherStarted = false;
     private $lastIdEvents = 0;
-    private $timezoneOffset = 0;
     private $whoseTurn;
 
     public function __construct(\stdClass $game = null)
@@ -225,7 +224,7 @@ class Data
         $this->otherJoined = (bool)$otherJoined;
     }
 
-    public function getPlayer()
+    public function getPlayerStarted()
     {
         return $this->playerStarted;
     }
@@ -253,16 +252,6 @@ class Data
     public function setLastIdEvents($lastIdEvents)
     {
         $this->lastIdEvents = $lastIdEvents;
-    }
-
-    public function getTimezoneOffset()
-    {
-        return $this->timezoneOffset;
-    }
-
-    public function setTimezoneOffset($timezoneOffset)
-    {
-        $this->timezoneOffset = $timezoneOffset;
     }
 
     public function getWhoseTurn()

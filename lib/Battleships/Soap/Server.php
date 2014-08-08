@@ -10,7 +10,7 @@ use Battleships\Misc;
  * Battleships\Soap\Server class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.5.1
+ * @version    0.6
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.5
  *
@@ -30,12 +30,18 @@ class Server
         $this->oManager = $oManager;
     }
 
-    public function getGame($hash = "", $timezoneOffset = 0)
+    public function getGame($hash = "")
     {
         $this->oManager->initGame($hash);
         $oFormatter = new Formatter($this->oManager);
+        $gameData = $oFormatter->getForGame($hash === "");
+        // SOAP client prefers arrays so let it be for now
+        $gameData->battle = (array)$gameData->battle;
+        foreach ($gameData->battle as &$shots) {
+            $shots = (array)$shots;
+        }
 
-        return $oFormatter->getForGame($hash === "");
+        return $gameData;
     }
 
     public function updateName($hash, $playerName)

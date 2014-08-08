@@ -3,10 +3,21 @@
 namespace Battleships\Http;
 
 use Battleships\Misc;
-use Battleships\Http\Request;
 
+/**
+ * HTTP Response Class
+ *
+ * @author     Jerzy Lekowski <jerzy@lekowski.pl>
+ * @version    0.6
+ * @link       http://dev.lekowski.pl
+ * @since      File available since Release 0.6
+ *
+ */
 class Response
 {
+    /**
+     * @var array
+     */
     protected $headers = array(
         200 => "200 OK", // GET OK, PUT OK, DELETE OK
         201 => "201 Created", // POST OK
@@ -14,15 +25,26 @@ class Response
         404 => "404 Not Found" // GET No hash, PUT No hash, POST No hash, DELETE No hash
     );
 
+    /**
+     * @var string
+     */
     private $header;
+    /**
+     * @var string
+     */
     private $requestMethod;
-//    private $response;
+    /**
+     * @var mixed
+     */
     private $result;
     /**
      * @var \Exception
      */
     private $error;
 
+    /**
+     * @param Request $oRequest
+     */
     public function __construct(Request $oRequest)
     {
         $this->requestMethod = $oRequest->getMethod();
@@ -50,6 +72,9 @@ class Response
 //        ob_flush();
     }
 
+    /**
+     * @param mixed $result
+     */
     public function setResult($result)
     {
         $this->result = $result;
@@ -62,17 +87,26 @@ class Response
             : $this->getHeaderForSuccess();
     }
 
+    /**
+     * @param \Exception $e
+     */
     public function setError(\Exception $e)
     {
         Misc::log($e);
         $this->error = $e;
     }
 
+    /**
+     * @return bool
+     */
     public function hasError()
     {
         return !empty($this->error);
     }
 
+    /**
+     * @return \stdClass
+     */
     public function getFormatted()
     {
         $response = new \stdClass();
@@ -82,10 +116,13 @@ class Response
         return $response;
     }
 
+    /**
+     * @return null|\stdClass
+     */
     private function getErrorFormatted()
     {
         if (!$this->hasError()) {
-            return $this->error;
+            return null;
         }
 
         $error = new \stdClass();
@@ -95,6 +132,9 @@ class Response
         return $error;
     }
 
+    /**
+     * @return string
+     */
     private function getHeaderForSuccess()
     {
         switch ($this->requestMethod) {
@@ -115,6 +155,9 @@ class Response
         return $header;
     }
 
+    /**
+     * @return string
+     */
     private function getHeaderForError()
     {
         switch ($this->requestMethod) {

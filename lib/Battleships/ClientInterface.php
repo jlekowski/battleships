@@ -2,6 +2,8 @@
 
 namespace Battleships;
 
+use Battleships\Game\Data;
+
 /**
  * Battleships\ClientInterface interface
  *
@@ -32,14 +34,14 @@ interface ClientInterface
      * @param \Battleships\Game\Data $oData
      * @param string $playerName
      */
-    public function updateName(\Battleships\Game\Data $oData, $playerName);
+    public function updateName(Data $oData, $playerName);
 
     /**
      * Add ships to start game
      * @param \Battleships\Game\Data $oData
      * @param array $ships
      */
-    public function addShips(\Battleships\Game\Data $oData, array $ships);
+    public function addShips(Data $oData, array $ships);
 
     /**
      * Add shot
@@ -47,19 +49,19 @@ interface ClientInterface
      * @param string $coords
      * @return string miss|hit|sunk
      */
-    public function addShot(\Battleships\Game\Data $oData, $coords);
+    public function addShot(Data $oData, $coords);
 
     /**
      * Add chat
      * @param \Battleships\Game\Data $oData
      * @param string $text
      */
-    public function addChat(\Battleships\Game\Data $oData, $text);
+    public function addChat(Data $oData, $text);
 
     /**
      * Get updates
      * @param \Battleships\Game\Data $oData
      * @return array
      */
-    public function getUpdates(\Battleships\Game\Data $oData);
+    public function getUpdates(Data $oData);
 }

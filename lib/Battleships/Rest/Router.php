@@ -5,6 +5,15 @@ namespace Battleships\Rest;
 use Battleships\RouterInterface;
 use Battleships\Http\Request;
 
+/**
+ * REST Router Class
+ *
+ * @author     Jerzy Lekowski <jerzy@lekowski.pl>
+ * @version    0.6
+ * @link       http://dev.lekowski.pl
+ * @since      File available since Release 0.6
+ *
+ */
 class Router implements RouterInterface
 {
     /**
@@ -38,6 +47,9 @@ class Router implements RouterInterface
      */
     private $actionName;
 
+    /**
+     * @param \Battleships\Http\Request $oRequest
+     */
     public function __construct(Request $oRequest)
     {
         // set params

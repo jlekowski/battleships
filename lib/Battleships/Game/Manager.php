@@ -13,7 +13,7 @@ use Battleships\Exception\GameFlowException;
  * Battleships\Game\Manager class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.5.1
+ * @version    0.6
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.1b
  *
@@ -70,8 +70,8 @@ class Manager
     /**
      * Initiates PDO Object and creates DB tables if required
      *
-     * @param Battleships\Game\Data $oData
-     * @param Battleships\DB $oDB
+     * @param \Battleships\Game\Data $oData
+     * @param \Battleships\DB $oDB
      */
     public function __construct(Data $oData, DB $oDB)
     {
@@ -319,7 +319,7 @@ class Manager
      * Gets existing game from DB by hash
      *
      * @param string $eventType Type of the event
-     * @param string $eventValue Value of the event
+     * @param mixed $eventValue Value of the event
      */
     private function addEvent($eventType, $eventValue = 1)
     {

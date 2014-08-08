@@ -4,7 +4,6 @@ namespace Battleships\Rest;
 
 use Battleships\ClientInterface;
 use Battleships\Game\Data;
-use Battleships\Misc;
 
 /**
  * Battleships\Rest\Client class

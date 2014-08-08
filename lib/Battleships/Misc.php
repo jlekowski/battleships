@@ -8,7 +8,7 @@ use Battleships\Exception\JsonException;
  * General functions
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.5.1
+ * @version    0.6
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.5
  *
@@ -82,6 +82,14 @@ class Misc
         return sprintf("%s://%s%s", $protocol, $host, $uri);
     }
 
+    /**
+     * @param string $json
+     * @param bool $assoc
+     * @param int $depth
+     * @param int $options
+     * @return mixed
+     * @throws \Battleships\Exception\JsonException
+     */
     public static function jsonDecode($json, $assoc = false, $depth = 512, $options = 0)
     {
         $jsonObject = json_decode($json, $assoc, $depth, $options);

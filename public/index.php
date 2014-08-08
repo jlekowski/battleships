@@ -60,8 +60,9 @@ try {
     <title>Battleships</title>
     <link href="css/main.css" rel="stylesheet" />
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script src="js/jquery.xml2json.js"></script>
-    <script src="js/jquery.soap.js"></script>
+<!--    <script src="js/jquery.xml2json.js"></script>-->
+<!--    <script src="js/jquery.soap.js"></script>-->
+<!--    <script src="js/battleships_soap.js"></script>-->
     <script src="js/battleships.js"></script>
     <script src="js/main.js"></script>
 </head>
@@ -91,13 +92,13 @@ if (!Misc::isRootDir() && (SQLITE_FILE == "battleships.sqlite")) {
     <div class="board_container">
         <div class="board_menu">
             <input type="text" value="<?=$oManager->oData->getPlayerName()?>" />
-            <span id="name_update"><?=Misc::escapeString($oManager->oData->getPlayerName())?></span>
+            <span id="name_update" class="player_name"><?=Misc::escapeString($oManager->oData->getPlayerName())?></span>
         </div>
 <?=Manager::createBoard()?>
     </div>
     <div class="board_container">
         <div class="board_menu">
-            <span><?=Misc::escapeString($oManager->oData->getOtherName())?></span>
+            <span class="other_name"><?=Misc::escapeString($oManager->oData->getOtherName())?></span>
         </div>
 <?=Manager::createBoard()?>
     </div>

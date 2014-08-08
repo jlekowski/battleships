@@ -2,10 +2,28 @@
 
 namespace Battleships\Http;
 
+/**
+ * HTTP Request Class
+ *
+ * @author     Jerzy Lekowski <jerzy@lekowski.pl>
+ * @version    0.6
+ * @link       http://dev.lekowski.pl
+ * @since      File available since Release 0.6
+ *
+ */
 class Request
 {
+    /**
+     * @var array
+     */
     protected $params;
+    /**
+     * @var string
+     */
     protected $method;
+    /**
+     * @var string
+     */
     protected $data;
 
     public function __construct()
@@ -23,16 +41,25 @@ class Request
         $this->data = file_get_contents("php://input");
     }
 
+    /**
+     * @return array
+     */
     public function getParams()
     {
         return $this->params;
     }
 
+    /**
+     * @return string
+     */
     public function getMethod()
     {
         return $this->method;
     }
 
+    /**
+     * @return string
+     */
     public function getData()
     {
         return $this->data;
