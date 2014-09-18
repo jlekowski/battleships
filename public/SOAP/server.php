@@ -4,7 +4,7 @@
  * SOAP Server
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
- * @version    0.5
+ * @version    0.5.1
  * @link       http://dev.lekowski.pl
  * @since      File available since Release 0.3
  *

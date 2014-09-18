@@ -39,6 +39,8 @@ php bin/client.php
 
 ## === Changelog ===
 
+* version **0.5.1**
+ * Small fix when mod_rewrite turned off
 * version **0.5**
  * Refactored code (namespaces, naming, file structure)
  * Added chat information for CLI
