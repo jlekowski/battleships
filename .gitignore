@@ -1,2 +1,4 @@
 db/*.sqlite
 log/*
+bin/phpspec
+vendor/
