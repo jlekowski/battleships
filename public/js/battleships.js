@@ -150,7 +150,7 @@ var BattleshipsClass = function() {
         }).toArray();
 
         $.ajax({
-            url: 'server.php?/games/' + $("#hash").val() + '/ships',
+            url: '/games/' + $("#hash").val() + '/ships',
             method: 'POST',
             data: JSON.stringify({
                 ships: shipsArray
@@ -182,7 +182,7 @@ var BattleshipsClass = function() {
         var player_name = $input.val();
 
         $.ajax({
-            url: 'server.php?/games/' + $("#hash").val(),
+            url: '/games/' + $("#hash").val(),
             method: 'PUT',
             data: JSON.stringify({
                 name: $('<span>').text(player_name).html()
@@ -235,7 +235,7 @@ var BattleshipsClass = function() {
 
         $chatbox.prop('disabled', true);
         $.ajax({
-            url: 'server.php?/games/' + $("#hash").val() + '/chats',
+            url: '/games/' + $("#hash").val() + '/chats',
             method: 'POST',
             data: JSON.stringify({
                 text: $('<span>').text(text).html()
@@ -273,7 +273,7 @@ var BattleshipsClass = function() {
         set_turn();
 
         $.ajax({
-            url: 'server.php?/games/' + $("#hash").val() + '/shots/',
+            url: '/games/' + $("#hash").val() + '/shots/',
             method: 'POST',
             data: JSON.stringify({
                 shot: coords
@@ -425,7 +425,7 @@ var BattleshipsClass = function() {
         }
 
         updateXHR = $.ajax({
-            url: 'server.php?/games/' + $("#hash").val() + '/updates/' + lastIdEvents,
+            url: '/games/' + $("#hash").val() + '/updates/' + lastIdEvents,
             method: 'GET',
             success: function(response) {
                 var result = response.result;
@@ -491,7 +491,7 @@ var BattleshipsClass = function() {
 
     function get_battle() {
         $.ajax({
-            url: 'server.php?/games/' + $("#hash").val(),
+            url: '/games/' + $("#hash").val(),
             method: 'GET',
             success: function(response) {
                 var key;
