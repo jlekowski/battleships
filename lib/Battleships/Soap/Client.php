@@ -101,6 +101,11 @@ class Client implements ClientInterface
         // TODO: Implement addChat() method.
     }
 
+    /**
+     * Get updates
+     * @param \Battleships\Game\Data $oData
+     * @return array
+     */
     public function getUpdates(Data $oData)
     {
         $result = $this->soapClient->getUpdates($oData->getPlayerHash(), $oData->getLastIdEvents());

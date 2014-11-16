@@ -86,6 +86,11 @@ class Client extends AbstractClient implements ClientInterface
         $oData->chats[] = $chatData;
     }
 
+    /**
+     * Get updates
+     * @param \Battleships\Game\Data $oData
+     * @return array
+     */
     public function getUpdates(Data $oData)
     {
         $result = $this->call("/games/" . $oData->getPlayerHash() . "/updates/" . $oData->getLastIdEvents(), "GET");
@@ -94,6 +99,8 @@ class Client extends AbstractClient implements ClientInterface
                 $this->applyUpdate($oData, $update, $action);
             }
         }
+
+        return $result;
     }
 
     private function applyUpdate(Data $oData, $update, $action)

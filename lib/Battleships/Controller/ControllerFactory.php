@@ -21,7 +21,7 @@ class ControllerFactory
      * Get instance of a controller
      * @param \Battleships\RouterInterface $oRouter
      * @param \Battleships\Http\Response $oResponse
-     * @return \Battleships\Controller\Controller
+     * @return \Battleships\Controller\AbstractController
      * @throws \Battleships\Exception\InvalidControllerException
      */
     public static function build(RouterInterface $oRouter, Response $oResponse)

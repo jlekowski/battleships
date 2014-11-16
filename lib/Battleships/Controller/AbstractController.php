@@ -16,7 +16,7 @@ use Battleships\Exception\InvalidActionException;
  * @since      File available since Release 0.6
  *
  */
-abstract class Controller
+abstract class AbstractController
 {
     /**
      * @var \Battleships\Http\Response

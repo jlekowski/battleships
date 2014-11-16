@@ -35,11 +35,6 @@ class Server
         $this->oManager->initGame($hash);
         $oFormatter = new Formatter($this->oManager);
         $gameData = $oFormatter->getForGame($hash === "");
-        // SOAP client prefers arrays so let it be for now
-        $gameData->battle = (array)$gameData->battle;
-        foreach ($gameData->battle as &$shots) {
-            $shots = (array)$shots;
-        }
 
         return $gameData;
     }

@@ -18,7 +18,7 @@ use Battleships\Exception\MissingHashException;
  * @since      File available since Release 0.6
  *
  */
-class GamesController extends Controller
+class GamesController extends AbstractController
 {
     /**
      * @var \Battleships\Game\Manager
