@@ -51,8 +51,11 @@ var BattleshipsClass = function() {
         // default settings for AJAX calls
         $.ajaxSetup({
             dataType: 'json',
+            contentType: 'application/json; charset=UTF-8',
+            processData: false,
             beforeSend: function(jqXHR, settings) {
                 custom_log(settings.url);
+                settings.data = JSON.stringify(settings.data);
             },
             error: function(jqXHR) {
                 custom_log(jqXHR.responseJSON);
@@ -151,10 +154,8 @@ var BattleshipsClass = function() {
 
         $.ajax({
             url: '/games/' + $("#hash").val() + '/ships',
-            method: 'POST',
-            data: JSON.stringify({
-                ships: shipsArray
-            }),
+            type: 'POST',
+            data: {ships: shipsArray},
             success: function(response) {
                 custom_log(response);
 
@@ -183,10 +184,8 @@ var BattleshipsClass = function() {
 
         $.ajax({
             url: '/games/' + $("#hash").val(),
-            method: 'PUT',
-            data: JSON.stringify({
-                name: $('<span>').text(player_name).html()
-            }),
+            type: 'PUT',
+            data: {name: player_name},
             success: function(response) {
                 custom_log(response);
 
@@ -236,10 +235,8 @@ var BattleshipsClass = function() {
         $chatbox.prop('disabled', true);
         $.ajax({
             url: '/games/' + $("#hash").val() + '/chats',
-            method: 'POST',
-            data: JSON.stringify({
-                text: $('<span>').text(text).html()
-            }),
+            type: 'POST',
+            data: {text: text},
             success: function(response) {
                 var result = response.result;
                 custom_log(result);
@@ -274,10 +271,8 @@ var BattleshipsClass = function() {
 
         $.ajax({
             url: '/games/' + $("#hash").val() + '/shots/',
-            method: 'POST',
-            data: JSON.stringify({
-                shot: coords
-            }),
+            type: 'POST',
+            data: {shot: coords},
             success: function(response) {
                 var result = response.result;
                 custom_log(result);
@@ -426,7 +421,7 @@ var BattleshipsClass = function() {
 
         updateXHR = $.ajax({
             url: '/games/' + $("#hash").val() + '/updates/' + lastIdEvents,
-            method: 'GET',
+            type: 'GET',
             success: function(response) {
                 var result = response.result;
                 custom_log(result);
@@ -492,7 +487,7 @@ var BattleshipsClass = function() {
     function get_battle() {
         $.ajax({
             url: '/games/' + $("#hash").val(),
-            method: 'GET',
+            type: 'GET',
             success: function(response) {
                 var key;
                 var gameData = response.result;
