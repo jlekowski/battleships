@@ -5,9 +5,7 @@ require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "init" . DIRECTORY_SEPARAT
 use Battleships\Misc;
 
 try {
-    $baseUrl = "http://battleships.localhost";
-//    $baseUrl .= "/server.php?";
-    $apiRequest = new ApiRequest($baseUrl);
+    $apiRequest = new ApiRequest(REST_URL);
     // initiate game
     $game = $apiRequest->initGame();
     // get game
