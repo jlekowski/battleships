@@ -296,10 +296,9 @@ class Manager
             $this->oData->setLastIdEvents($lastIdEvents);
 
             if ($value['event_type'] == "chat") {
-                $eventValue = array(
-                    'text' => $value['event_value'],
-                    'timestamp' => $value['timestamp']
-                );
+                $eventValue = new \stdClass();
+                $eventValue->text = $value['event_value'];
+                $eventValue->timestamp = $value['timestamp'];
             } elseif ($value['event_type'] == 'start_game') {
                 $eventValue = true;
             } else {
