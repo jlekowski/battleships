@@ -47,29 +47,25 @@ class Response
      */
     public function __construct(Request $oRequest)
     {
+        ob_start();
         $this->requestMethod = $oRequest->getMethod();
-//        ob_start();
     }
 
     public function __destruct()
     {
-//        ob_end_clean();
+        ob_end_clean();
     }
-
-//    public function __set($name, $value) {
-//        throw new \InvalidArgumentException;
-//    }
 
     public function dispatch()
     {
-//        ob_get_clean();
+        ob_get_clean();
         $this->applyRestHeaders();
         if ($this->header) {
             header('HTTP/1.1 ' . $this->header);
         }
         header('Content-type: application/json');
         echo json_encode($this->getFormatted());
-//        ob_flush();
+        ob_flush();
     }
 
     /**
