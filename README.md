@@ -43,6 +43,7 @@ php bin/client.php
  * Moved from SOAP to REST API (both supported, but SOAP will be removed in 0.7)
  * Upgraded client to jQuery v2
  * Added simple End-to-End test
+ * Added first unit tests
  * Refactored a lot of code (Battleships object in JS, exceptions instead of errors and others)
 * version **0.5.1**
  * Small fix when mod_rewrite turned off
