@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * Simple End-to-End API test
+ *
+ * @author     Jerzy Lekowski <jerzy@lekowski.pl>
+ * @version    0.6
+ * @link       http://dev.lekowski.pl
+ * @since      File available since Release 0.6
+ *
+ */
+
 require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "init" . DIRECTORY_SEPARATOR . "bootstrap.php";
 
 use Battleships\Misc;
@@ -31,7 +41,8 @@ try {
     if (isset($game)) {
         print_r($game);
     }
-    exit("ERROR: " . $e->getMessage() . PHP_EOL);
+    printf("ERROR: %s (type: %s)\n", $e->getMessage(), get_class($e));
+    exit;
 }
 
 exit("OK\n");

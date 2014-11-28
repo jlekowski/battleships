@@ -71,8 +71,8 @@ class Misc
 
     public static function getRequestedUrl()
     {
-        if (isset($_SERVER['SCRIPT_URI'])) {
-            return $_SERVER['SCRIPT_URI'];
+        if (isset($_SERVER['SCRIPT_URI']) || isset($_SERVER['REQUEST_URI'])) {
+            return isset($_SERVER['SCRIPT_URI']) ? $_SERVER['SCRIPT_URI'] : $_SERVER['REQUEST_URI'];
         }
 
         $protocol = $_SERVER['SERVER_PORT'] === "443" ? "https" : "http";
@@ -101,6 +101,10 @@ class Misc
         return $jsonObject;
     }
 
+    /**
+     * @param mixed $log
+     * @todo replace with PSR Logger
+     */
     public static function log($log)
     {
         if ($log instanceof \Exception) {

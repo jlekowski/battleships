@@ -1,0 +1,232 @@
+<?php
+
+namespace spec\Battleships\Http;
+
+use Battleships\Http\Request;
+use PhpSpec\ObjectBehavior;
+use Prophecy\Argument;
+
+class Response extends \Battleships\Http\Response
+{
+    public $disabledMethods = array();
+    public $calledMethods = array();
+
+    public function __destruct() {} // because there's no output buffering here
+
+    public function applyRestHeaders()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getErrorFormatted()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getFormatted()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function hasError()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getHeaderForError()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getHeaderForSuccess()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    /**
+     * Access parent protected property
+     *
+     * @param string $property
+     * @return mixed
+     */
+    public function __get($property)
+    {
+        return $this->$property;
+    }
+
+    /**
+     * Set parent protected property
+     *
+     * @param $property
+     * @param $value
+     */
+    public function __set($property, $value)
+    {
+        $this->$property = $value;
+    }
+
+    /**
+     * Call parent method or log method call and return set value
+     * @param  string $method
+     * @param  array  $args
+     * @return mixed
+     */
+    private function handleMethod($method, array $args)
+    {
+        $hasReturnValue = array_key_exists($method, $this->disabledMethods);
+        // if in_array() with no type comparison, objects may throw Exception on __toString()
+        if (!in_array($method, $this->disabledMethods, true) && !$hasReturnValue) {
+            return call_user_func_array("parent::" . $method, $args);
+        }
+
+        $this->calledMethods[$method][] = $args;
+        if ($hasReturnValue) {
+            return $this->disabledMethods[$method];
+        }
+    }
+}
+
+class ResponseSpec extends ObjectBehavior
+{
+    public function let(Request $oRequest)
+    {
+        $oRequest->getMethod()->shouldBeCalled();
+        $this->beAnInstanceOf('spec\Battleships\Http\Response');
+        $this->beConstructedWith($oRequest);
+    }
+
+    public function it_is_initializable()
+    {
+        $this->shouldHaveType('spec\Battleships\Http\Response');
+    }
+
+    public function it_can_dispatch()
+    {
+        $this->disabledMethods = ['applyRestHeaders', 'getFormatted' => ['ob']];
+
+        $this->dispatch();
+
+        $this->calledMethods['applyRestHeaders']->shouldHaveCount(1);
+        $this->calledMethods['getFormatted']->shouldHaveCount(1);
+    }
+
+    public function it_sets_result()
+    {
+        $this->setResult('some Result');
+        $this->result->shouldBe('some Result');
+    }
+
+    public function it_can_apply_rest_headers()
+    {
+        // no error
+        $this->disabledMethods = ['hasError' => false, 'getHeaderForError', 'getHeaderForSuccess' => 'some success'];
+
+        $this->applyRestHeaders();
+
+        $this->calledMethods['hasError']->shouldHaveCount(1);
+        $this->calledMethods->shouldNotHaveKey('getHeaderForError');
+        $this->calledMethods['getHeaderForSuccess']->shouldHaveCount(1);
+        $this->header->shouldBe('some success');
+
+        // has error
+        $this->disabledMethods = ['hasError' => true, 'getHeaderForError' => 'some error', 'getHeaderForSuccess'];
+        $this->calledMethods = [];
+
+        $this->applyRestHeaders();
+
+        $this->calledMethods['hasError']->shouldHaveCount(1);
+        $this->calledMethods['getHeaderForError']->shouldHaveCount(1);
+        $this->calledMethods->shouldNotHaveKey('getHeaderForSuccess');
+        $this->header->shouldBe('some error');
+    }
+
+    public function it_sets_error()
+    {
+        ini_set('error_log', '/dev/null'); // as currently Misc::log() outputs error using error_log()
+        $e = new \Exception('test');
+        $this->setError($e);
+        $this->error->shouldBe($e);
+    }
+
+    public function it_checks_for_error()
+    {
+        // has error
+        $this->error = '1';
+        $this->shouldHaveError();
+
+        // has no error
+        $this->error = [];
+        $this->shouldNotHaveError();
+    }
+
+    public function it_gets_formatted_response()
+    {
+        $this->disabledMethods = ['getErrorFormatted' => 'my_error'];
+        $this->result = 'my_result';
+
+        $this->getFormatted()->shouldBeCloneOf(['result' => 'my_result', 'error' => 'my_error']);
+    }
+
+    public function it_gets_error_formatted()
+    {
+        // no error
+        $this->getErrorFormatted()->shouldBeNull();
+
+        // has error
+        $e = new \Exception('my_msg', 19);
+        $this->error = $e;
+        $this->getErrorFormatted()->shouldBeCloneOf(['message' => 'my_msg', 'code' => 19]);
+    }
+
+    public function it_can_get_header_for_success()
+    {
+        // no request method
+        $this->getHeaderForSuccess()->shouldBe('');
+
+        $this->requestMethod = 'GET';
+        $this->getHeaderForSuccess()->shouldBe('200 OK');
+
+        $this->requestMethod = 'PUT';
+        $this->getHeaderForSuccess()->shouldBe('200 OK');
+
+        $this->requestMethod = 'DELETE';
+        $this->getHeaderForSuccess()->shouldBe('200 OK');
+
+        $this->requestMethod = 'POST';
+        $this->getHeaderForSuccess()->shouldBe('201 Created');
+    }
+
+    public function it_can_get_header_for_error()
+    {
+        // no request method
+        $this->getHeaderForError()->shouldBe('');
+
+        $this->requestMethod = 'GET';
+        $this->getHeaderForError()->shouldBe('404 Not Found');
+
+        $this->requestMethod = 'PUT';
+        $this->getHeaderForError()->shouldBe('404 Not Found');
+
+        $this->requestMethod = 'DELETE';
+        $this->getHeaderForError()->shouldBe('404 Not Found');
+
+        $this->requestMethod = 'POST';
+        $this->getHeaderForError()->shouldBe('404 Not Found');
+    }
+
+
+    public function getMatchers()
+    {
+        return [
+            'beCloneOf' => function($subject, array $subjectAsArray) {
+                foreach ($subject as $property => $value) {
+                    if ($value !== $subjectAsArray[$property]) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        ];
+    }
+}

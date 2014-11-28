@@ -28,19 +28,19 @@ class Response
     /**
      * @var string
      */
-    private $header;
+    protected $header;
     /**
      * @var string
      */
-    private $requestMethod;
+    protected $requestMethod;
     /**
      * @var mixed
      */
-    private $result;
+    protected $result;
     /**
      * @var \Exception
      */
-    private $error;
+    protected $error;
 
     /**
      * @param Request $oRequest
@@ -115,7 +115,7 @@ class Response
     /**
      * @return null|\stdClass
      */
-    private function getErrorFormatted()
+    protected function getErrorFormatted()
     {
         if (!$this->hasError()) {
             return null;
@@ -131,8 +131,9 @@ class Response
     /**
      * @return string
      */
-    private function getHeaderForSuccess()
+    protected function getHeaderForSuccess()
     {
+        $header = '';
         switch ($this->requestMethod) {
             case 'GET':
             case 'PUT':
@@ -154,8 +155,9 @@ class Response
     /**
      * @return string
      */
-    private function getHeaderForError()
+    protected function getHeaderForError()
     {
+        $header = '';
         switch ($this->requestMethod) {
             case 'GET':
             case 'POST':
