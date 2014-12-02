@@ -31,7 +31,7 @@ class Request
         // set request method
         $this->method = $_SERVER['REQUEST_METHOD'];
 
-        // set request paramters
+        // set request parameters
         $urlInfo = pathinfo($_SERVER['PHP_SELF']);
         // remove public folder from URL but only once (in case it's "/")
         $urlParams = preg_replace("#^" . $urlInfo['dirname'] ."(/?)#", "", $_SERVER['REQUEST_URI'], 1);

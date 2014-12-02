@@ -2,17 +2,18 @@
 
 namespace spec\Battleships\Rest;
 
+use Battleships\Http\Request;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 
 class RouterSpec extends ObjectBehavior
 {
-    public function let(\Battleships\Http\Request $request)
+    public function let(Request $oRequest)
     {
-        $request->getParams()->shouldBeCalled();
-        $request->getData()->shouldBeCalled();
-        $request->getMethod()->shouldBeCalled();
-        $this->beConstructedWith($request);
+        $oRequest->getParams()->shouldBeCalled();
+        $oRequest->getData()->shouldBeCalled();
+        $oRequest->getMethod()->shouldBeCalled();
+        $this->beConstructedWith($oRequest);
     }
 
     public function it_is_initializable()
@@ -20,15 +21,15 @@ class RouterSpec extends ObjectBehavior
         $this->shouldHaveType('Battleships\Rest\Router');
     }
 
-    public function it_gets_data_from_request($request)
+    public function it_gets_data_from_request($oRequest)
     {
         $data = '{"a":1}';
-        $request->getData()->willReturn($data);
+        $oRequest->getData()->willReturn($data);
 
         $this->getData()->shouldReturn($data);
     }
 
-    public function it_gets_params_from_request($request)
+    public function it_gets_params_from_request($oRequest)
     {
         $params = ['games', 'hashav13212', 'shots', 'A2'];
         $routerParams = [
@@ -37,22 +38,22 @@ class RouterSpec extends ObjectBehavior
             'action' => $params[2],
             'actionParam' => $params[3]
         ];
-        $request->getParams()->willReturn($params);
+        $oRequest->getParams()->willReturn($params);
 
         $this->getParams()->shouldReturn($routerParams);
     }
 
-    public function it_gets_action_name($request)
+    public function it_gets_action_name($oRequest)
     {
-        $request->getMethod()->willReturn('POST');
-        $request->getParams()->willReturn([null, null, 'chats']);
+        $oRequest->getMethod()->willReturn('POST');
+        $oRequest->getParams()->willReturn([null, null, 'chats']);
 
         $this->getActionName()->shouldReturn('addChats');
     }
 
-    public function it_gets_controller_name($request)
+    public function it_gets_controller_name($oRequest)
     {
-        $request->getParams()->willReturn(['games']);
+        $oRequest->getParams()->willReturn(['games']);
 
         $this->getControllerName()->shouldReturn('games');
     }

@@ -3,13 +3,15 @@
 namespace spec\Battleships\Http;
 
 use Battleships\Http\Request;
+use Battleships\Http\Response;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
+use TestMocker\AccessProtectedTrait;
+use TestMocker\MockMethodsTrait;
 
-class Response extends \Battleships\Http\Response
+class ResponseTest extends Response
 {
-    public $disabledMethods = array();
-    public $calledMethods = array();
+    use AccessProtectedTrait, MockMethodsTrait;
 
     public function __destruct() {} // because there's no output buffering here
 
@@ -42,48 +44,6 @@ class Response extends \Battleships\Http\Response
     {
         return $this->handleMethod(__FUNCTION__, func_get_args());
     }
-
-    /**
-     * Access parent protected property
-     *
-     * @param string $property
-     * @return mixed
-     */
-    public function __get($property)
-    {
-        return $this->$property;
-    }
-
-    /**
-     * Set parent protected property
-     *
-     * @param $property
-     * @param $value
-     */
-    public function __set($property, $value)
-    {
-        $this->$property = $value;
-    }
-
-    /**
-     * Call parent method or log method call and return set value
-     * @param  string $method
-     * @param  array  $args
-     * @return mixed
-     */
-    private function handleMethod($method, array $args)
-    {
-        $hasReturnValue = array_key_exists($method, $this->disabledMethods);
-        // if in_array() with no type comparison, objects may throw Exception on __toString()
-        if (!in_array($method, $this->disabledMethods, true) && !$hasReturnValue) {
-            return call_user_func_array("parent::" . $method, $args);
-        }
-
-        $this->calledMethods[$method][] = $args;
-        if ($hasReturnValue) {
-            return $this->disabledMethods[$method];
-        }
-    }
 }
 
 class ResponseSpec extends ObjectBehavior
@@ -91,13 +51,13 @@ class ResponseSpec extends ObjectBehavior
     public function let(Request $oRequest)
     {
         $oRequest->getMethod()->shouldBeCalled();
-        $this->beAnInstanceOf('spec\Battleships\Http\Response');
+        $this->beAnInstanceOf('spec\Battleships\Http\ResponseTest');
         $this->beConstructedWith($oRequest);
     }
 
     public function it_is_initializable()
     {
-        $this->shouldHaveType('spec\Battleships\Http\Response');
+        $this->shouldHaveType('spec\Battleships\Http\ResponseTest');
     }
 
     public function it_can_dispatch()
