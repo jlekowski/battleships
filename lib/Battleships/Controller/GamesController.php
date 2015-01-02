@@ -2,9 +2,6 @@
 
 namespace Battleships\Controller;
 
-use Battleships\DB;
-use Battleships\Game\Data;
-use Battleships\Game\Manager;
 use Battleships\Game\Formatter;
 use Battleships\Misc;
 use Battleships\Exception\MissingHashException;
@@ -21,17 +18,10 @@ use Battleships\Exception\MissingHashException;
 class GamesController extends AbstractController
 {
     /**
-     * @var \Battleships\Game\Manager
-     */
-    protected $oManager;
-
-    /**
      * @throws MissingHashException
      */
     public function init()
     {
-        $this->oManager = new Manager(new Data(), new DB(DB_TYPE));
-
         // hash is not required when a new game starts
         if ($this->actionName !== "add") {
             $hash = $this->getParam('controllerParam');

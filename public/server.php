@@ -15,6 +15,10 @@ require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "init" . DIRECTORY_SEPARAT
 use Battleships\Http\Request;
 use Battleships\Http\Response;
 use Battleships\Rest\Router;
+use Battleships\Game\Manager;
+use Battleships\Game\Data;
+use Battleships\DB;
+use Battleships\DBConfig;
 use Battleships\Controller\ControllerFactory;
 
 // to use long calls
@@ -24,7 +28,9 @@ try {
     $oRequest = new Request();
     $oResponse = new Response($oRequest);
     $oRouter = new Router($oRequest);
-    $controller = ControllerFactory::build($oRouter, $oResponse);
+    $oDB = new DB(new DBConfig());
+    $oManager = new Manager(new Data(), $oDB);
+    $controller = ControllerFactory::build($oRouter, $oResponse, $oManager);
     $controller->run();
 } catch (\Exception $e) {
     $oResponse->setError($e);

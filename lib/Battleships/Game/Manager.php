@@ -236,7 +236,7 @@ class Manager
         $query = "INSERT INTO games (player1_hash, player1_name, player1_ships,
                                      player2_hash, player2_name, player2_ships, timestamp)
                   VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $this->oDB->fQuery($query, array_values($game));
+        $this->oDB->getAll($query, array_values($game));
 
         $game['player_number'] = 1; // player who starts is always No. 1
         $game['id'] = $this->oDB->lastInsertId();
@@ -254,7 +254,7 @@ class Manager
     public function updateName($playerName)
     {
         $query = sprintf("UPDATE games SET player%d_name = ? WHERE id = ?", $this->oData->getPlayerNumber());
-        $this->oDB->fQuery($query, array($playerName, $this->oData->getIdGames()));
+        $this->oDB->getAll($query, array($playerName, $this->oData->getIdGames()));
 
         $this->addEvent('name_update', $playerName);
     }
@@ -270,7 +270,7 @@ class Manager
     public function getUpdates()
     {
         $query = "SELECT * FROM events WHERE id > ? AND game_id = ? AND player = ?";
-        $result = $this->oDB->fQuery($query, array(
+        $result = $this->oDB->getAll($query, array(
             $this->oData->getLastIdEvents(),
             $this->oData->getIdGames(),
             $this->oData->getOtherNumber()
@@ -323,7 +323,7 @@ class Manager
     private function addEvent($eventType, $eventValue = 1)
     {
         $query = "INSERT INTO events (game_id, player, event_type, event_value, timestamp) VALUES (?, ?, ?, ?, ?)";
-        $this->oDB->fQuery($query, array(
+        $this->oDB->getAll($query, array(
             $this->oData->getIdGames(),
             $this->oData->getPlayerNumber(),
             $eventType,
@@ -369,7 +369,7 @@ class Manager
         }
 
         $query = sprintf("UPDATE games SET player%d_ships = ? WHERE id = ?", $this->oData->getPlayerNumber());
-        $this->oDB->fQuery($query, array($ships, $this->oData->getIdGames()));
+        $this->oDB->getAll($query, array($ships, $this->oData->getIdGames()));
         $this->addEvent("start_game", $ships);
     }
 
@@ -520,7 +520,7 @@ class Manager
     private function getEvents($eventType, $raw = false)
     {
         $query = "SELECT * FROM events WHERE game_id = ? AND event_type IN (:event_types)";
-        $result = $this->oDB->fQuery($query, array($this->oData->getIdGames(), ':event_types' => $eventType));
+        $result = $this->oDB->getAll($query, array($this->oData->getIdGames(), ':event_types' => $eventType));
 
         if ($raw) {
             return $result;

@@ -4,6 +4,7 @@ namespace Battleships\Controller;
 
 use Battleships\RouterInterface;
 use Battleships\Http\Response;
+use Battleships\Game\Manager;
 use Battleships\Misc;
 use Battleships\Exception\InvalidActionException;
 
@@ -22,6 +23,10 @@ abstract class AbstractController
      * @var \Battleships\Http\Response
      */
     protected $oResponse;
+    /**
+     * @var \Battleships\Game\Manager
+     */
+    protected $oManager;
     /**
      * @var string
      */
@@ -51,11 +56,13 @@ abstract class AbstractController
     /**
      * @param \Battleships\RouterInterface $oRouter
      * @param \Battleships\Http\Response $oResponse
+     * @param \Battleships\Game\Manager $oManager
      * @throws \Battleships\Exception\JsonException
      */
-    final public function __construct(RouterInterface $oRouter, Response $oResponse)
+    final public function __construct(RouterInterface $oRouter, Response $oResponse, Manager $oManager)
     {
         $this->oResponse = $oResponse;
+        $this->oManager = $oManager;
         $this->actionName = $oRouter->getActionName();
         $this->params = $oRouter->getParams();
         $this->rawData = $oRouter->getData();

@@ -2,6 +2,7 @@
 
 namespace Battleships;
 
+use Battleships\DBConfig;
 use Battleships\Exception\DBException;
 
 /**
@@ -16,110 +17,12 @@ use Battleships\Exception\DBException;
 class DB extends \PDO
 {
     /**
-     * PDO Statement Object
-     *
-     * Example: object(PDOStatement)#3 (1) {'queryString' => "SELECT ..."}
-     *
-     * @var object
+     * Constructor
+     * @param DBConfig $dbConfig
      */
-    private $sth;
-
-    /**
-     * Database type variable
-     *
-     * Example: SQLITE, MYSQL
-     *
-     * @var string
-     */
-    private $dbType;
-
-    /**
-     * Initiates PDO Object and creates DB tables if required
-     *
-     * @param string $dbType Type of the database
-     * @throws \InvalidArgumentException
-     */
-    public function __construct($dbType)
+    public function __construct(DBConfig $dbConfig)
     {
-        $this->dbType = $dbType;
-
-        try {
-            switch ($this->dbType) {
-                case "SQLITE":
-                    parent::__construct("sqlite:" . SQLITE_PATH . SQLITE_FILE);
-                    break;
-
-                case "MYSQL":
-                    parent::__construct("mysql:dbname=" . MYSQL_DB . ";host=" . MYSQL_HOST, MYSQL_USER, MYSQL_PASS);
-                    break;
-
-                default:
-                    throw new \InvalidArgumentException("Correct DB type is missing (" . $dbType .")");
-            }
-        } catch (\Exception $e) {
-            Misc::log($e);
-            exit('Database error occurred');
-        }
-    }
-
-    /**
-     * Returns Database type
-     *
-     * @return string
-     */
-    public function getDbType()
-    {
-        return $this->dbType;
-    }
-
-    /**
-     * Runs SQL Query and returns result (all records)
-     *
-     * @param string $query SQL Query
-     * @return array SQL Query result
-     * @throws \Battleships\Exception\DBException
-     */
-    public function query($query)
-    {
-        $result = parent::query($query);
-
-        if ($result === false) {
-            throw new DBException("Query could not be executed");
-        }
-
-        return $result->fetchall(\PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Sets query using PDO prepare
-     *
-     * @param string $query SQL Query prepare
-     * @return void
-     * @throws \Battleships\Exception\DBException
-     */
-    public function prepare($query)
-    {
-        $this->sth = parent::prepare($query, array(\PDO::ATTR_CURSOR => \PDO::CURSOR_FWDONLY));
-
-        if ($this->sth === false) {
-            throw new DBException("Statement could not be prepared");
-        }
-    }
-
-    /**
-     * Executes query using PDO execute
-     *
-     * @param array $values Values for SQL set in PDO prepare
-     * @return array SQL Query result
-     * @throws \Battleships\Exception\DBException
-     */
-    public function execute($values)
-    {
-        if ($this->sth->execute($values) === false) {
-            throw new DBException("Statement could not be executed");
-        }
-
-        return $this->sth->fetchAll(\PDO::FETCH_ASSOC);
+        parent::__construct($dbConfig->getDsn(), $dbConfig->getHost(), $dbConfig->getUsername(), $dbConfig->getPassword());
     }
 
     /**
@@ -132,7 +35,7 @@ class DB extends \PDO
      * @return array SQL Query result
      * @throws \Battleships\Exception\DBException
      */
-    public function fQuery($query, $parameters)
+    public function getAll($query, array $parameters = array())
     {
         // if array is multidimensional, i.e. an array is used for IN clause -
         // otherwise simple prepare and execute in one method
@@ -158,9 +61,17 @@ class DB extends \PDO
             }
         }
 
-        $this->prepare($query);
+        $sth = $this->prepare($query, array(\PDO::ATTR_CURSOR => \PDO::CURSOR_FWDONLY));
 
-        return $this->execute($parameters);
+        if ($sth === false) {
+            throw new DBException("Statement could not be prepared");
+        }
+
+        if ($sth->execute($parameters) === false) {
+            throw new DBException("Statement could not be executed");
+        }
+
+        return $sth->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -171,9 +82,9 @@ class DB extends \PDO
      *
      * @return array First row of the SQL Query result
      */
-    public function getFirst($query, $parameters = array())
+    public function getFirst($query, array $parameters = array())
     {
-        $result = empty($parameters) ? $this->query($query) : $this->fQuery($query, $parameters);
+        $result = $this->getAll($query, $parameters);
 
         return empty($result) ? $result : current($result);
     }

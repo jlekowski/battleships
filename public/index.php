@@ -16,15 +16,15 @@
 require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "init" . DIRECTORY_SEPARATOR . "bootstrap.php";
 
 use Battleships\DB;
+use Battleships\DBConfig;
 use Battleships\Game\Data;
 use Battleships\Game\Manager;
 use Battleships\Misc;
 
 // initiate Battleships objects
 try {
-    $oDB = new DB(DB_TYPE);
-    $oData = new Data();
-    $oManager = new Manager($oData, $oDB);
+    $oDB = new DB(new DBConfig());
+    $oManager = new Manager(new Data(), $oDB);
 } catch (Exception $e) {
     echo $e->getMessage();
     exit;
