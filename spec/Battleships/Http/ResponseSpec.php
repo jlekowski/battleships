@@ -13,7 +13,7 @@ class Response extends \Battleships\Http\Response
 
     public function __destruct() {} // because there's no output buffering here
 
-    public function applyRestHeaders()
+    public function getRestHeaders()
     {
         return $this->handleMethod(__FUNCTION__, func_get_args());
     }
@@ -102,42 +102,43 @@ class ResponseSpec extends ObjectBehavior
 
     public function it_can_dispatch()
     {
-        $this->disabledMethods = ['applyRestHeaders', 'getFormatted' => ['ob']];
+        $this->disabledMethods = ['getRestHeaders', 'getFormatted' => null];
 
         $this->dispatch();
 
-        $this->calledMethods['applyRestHeaders']->shouldHaveCount(1);
+        $this->calledMethods['getRestHeaders']->shouldHaveCount(1);
         $this->calledMethods['getFormatted']->shouldHaveCount(1);
     }
 
     public function it_sets_result()
     {
-        $this->setResult('some Result');
-        $this->result->shouldBe('some Result');
+        $this->setResult(['some Result']);
+        $this->result->shouldBe(['some Result']);
+
+        // when not null, array, or object given
+        $this->shouldThrow(new \InvalidArgumentException("Response result must be null, array, or object: string given"))
+            ->during('setResult', ['some Result']);
     }
 
-    public function it_can_apply_rest_headers()
+    public function it_can_get_rest_headers()
     {
         // no error
         $this->disabledMethods = ['hasError' => false, 'getHeaderForError', 'getHeaderForSuccess' => 'some success'];
 
-        $this->applyRestHeaders();
+        $this->getRestHeaders()->shouldReturn('some success');
 
         $this->calledMethods['hasError']->shouldHaveCount(1);
         $this->calledMethods->shouldNotHaveKey('getHeaderForError');
         $this->calledMethods['getHeaderForSuccess']->shouldHaveCount(1);
-        $this->header->shouldBe('some success');
 
         // has error
         $this->disabledMethods = ['hasError' => true, 'getHeaderForError' => 'some error', 'getHeaderForSuccess'];
-        $this->calledMethods = [];
 
-        $this->applyRestHeaders();
+        $this->getRestHeaders()->shouldReturn('some error');
 
-        $this->calledMethods['hasError']->shouldHaveCount(1);
+        $this->calledMethods['hasError']->shouldHaveCount(2);
         $this->calledMethods['getHeaderForError']->shouldHaveCount(1);
-        $this->calledMethods->shouldNotHaveKey('getHeaderForSuccess');
-        $this->header->shouldBe('some error');
+        $this->calledMethods['getHeaderForSuccess']->shouldHaveCount(1);
     }
 
     public function it_sets_error()
@@ -161,20 +162,19 @@ class ResponseSpec extends ObjectBehavior
 
     public function it_gets_formatted_response()
     {
-        $this->disabledMethods = ['getErrorFormatted' => 'my_error'];
+        // no error
+        $this->disabledMethods = ['hasError' => false];
         $this->result = 'my_result';
+        $this->getFormatted()->shouldReturn('my_result');
 
-        $this->getFormatted()->shouldBeCloneOf(['result' => 'my_result', 'error' => 'my_error']);
+        // with error
+        $this->disabledMethods = ['hasError' => true, 'getErrorFormatted' => 'my_error'];
+        $this->getFormatted()->shouldReturn('my_error');
     }
 
     public function it_gets_error_formatted()
     {
-        // no error
-        $this->getErrorFormatted()->shouldBeNull();
-
-        // has error
-        $e = new \Exception('my_msg', 19);
-        $this->error = $e;
+        $this->error = new \Exception('my_msg', 19);
         $this->getErrorFormatted()->shouldBeCloneOf(['message' => 'my_msg', 'code' => 19]);
     }
 

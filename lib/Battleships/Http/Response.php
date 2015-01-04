@@ -28,10 +28,6 @@ class Response
     /**
      * @var string
      */
-    protected $header;
-    /**
-     * @var string
-     */
     protected $requestMethod;
     /**
      * @var mixed
@@ -59,28 +55,34 @@ class Response
     public function dispatch()
     {
         ob_get_clean();
-        $this->applyRestHeaders();
-        if ($this->header) {
-            header('HTTP/1.1 ' . $this->header);
+        $restHeader = $this->getRestHeaders();
+        if ($restHeader) {
+            header('HTTP/1.1 ' . $restHeader);
         }
         header('Content-type: application/json');
-        echo json_encode($this->getFormatted());
+        $formattedResponse = $this->getFormatted();
+        if (!is_null($formattedResponse)) {
+            echo json_encode($formattedResponse);
+        }
         ob_flush();
     }
 
     /**
-     * @param mixed $result
+     * @param array|object|null $result
+     * @throws \InvalidArgumentException
      */
     public function setResult($result)
     {
+        if (!is_null($result) && !is_array($result) && !is_object($result)) {
+            throw new \InvalidArgumentException(sprintf("Response result must be null, array, or object: %s given", gettype($result)));
+        }
+
         $this->result = $result;
     }
 
-    public function applyRestHeaders()
+    public function getRestHeaders()
     {
-        $this->header = $this->hasError()
-            ? $this->getHeaderForError()
-            : $this->getHeaderForSuccess();
+        return $this->hasError() ? $this->getHeaderForError() : $this->getHeaderForSuccess();
     }
 
     /**
@@ -101,15 +103,11 @@ class Response
     }
 
     /**
-     * @return \stdClass
+     * @return array|\stdClass
      */
     public function getFormatted()
     {
-        $response = new \stdClass();
-        $response->result = $this->result;
-        $response->error = $this->getErrorFormatted();
-
-        return $response;
+        return $this->hasError() ? $this->getErrorFormatted() : $this->result;
     }
 
     /**
@@ -117,10 +115,6 @@ class Response
      */
     protected function getErrorFormatted()
     {
-        if (!$this->hasError()) {
-            return null;
-        }
-
         $error = new \stdClass();
         $error->code = $this->error->getCode();
         $error->message = $this->error->getMessage();

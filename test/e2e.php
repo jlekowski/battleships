@@ -36,6 +36,9 @@ try {
     $apiRequest->addShots($game);
     // get other updates
     $apiRequest->getOtherUpdates($otherGame);
+    // get incorrect game
+    $game->playerHash .= 'a';
+    $apiRequest->getGame($game, true);
 
 } catch (Exception $e) {
     if (isset($game)) {
@@ -69,7 +72,7 @@ class ApiRequest
     {
         $nameData = new stdClass();
         $nameData->name = "New Test Player";
-        $oRequestDetails = new RequestDetails("/games", "POST", $nameData);
+        $oRequestDetails = new RequestDetails("/games", "POST", $nameData, 201);
         $game = $this->call($oRequestDetails);
         $this->validateGame($game);
 
@@ -115,12 +118,14 @@ class ApiRequest
         }
     }
 
-    public function getGame(stdClass &$game)
+    public function getGame(stdClass &$game, $withError = false)
     {
-        $oRequestDetails = new RequestDetails("/games/" . $game->playerHash, "GET");
+        $oRequestDetails = new RequestDetails("/games/" . $game->playerHash, "GET", null, ($withError ? 404 : 200));
         $gameData = $this->call($oRequestDetails);
-        $this->validateGameDetails($gameData, $game);
-        $game = $gameData;
+        if (!$withError) {
+            $this->validateGameDetails($gameData, $game);
+            $game = $gameData;
+        }
     }
 
     private function validateGameDetails(stdClass $gameData, stdClass $game)
@@ -250,7 +255,7 @@ class ApiRequest
     {
         $shipsData = new stdClass();
         $shipsData->ships = array("A1","C2","D2","F2","H2","J2","F5","F6","I6","J6","A7","B7","C7","F7","F8","I9","J9","E10","F10","G10");
-        $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/ships", "POST", $shipsData);
+        $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/ships", "POST", $shipsData, 201);
         $result = $this->call($oRequestDetails);
         $this->validateNullResult($result, __FUNCTION__);
         $game->playerShips = $shipsData->ships;
@@ -262,9 +267,9 @@ class ApiRequest
     {
         $chatData = new stdClass();
         $chatData->text = "Test chat";
-        $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/chats", "POST", $chatData);
+        $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/chats", "POST", $chatData, 201);
         $result = $this->call($oRequestDetails);
-        $this->validateTimestamp($result);
+        $this->validateTimestamp($result->timestamp);
         $chatData->player = $game->playerNumber;
         $chatData->timestamp = $result;
         $game->chats[] = $chatData;
@@ -279,16 +284,16 @@ class ApiRequest
 
         foreach ($shots as $shot => $expectedResult) {
             $shotData->shot = $shot;
-            $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/shots", "POST", $shotData);
+            $oRequestDetails = new RequestDetails("/games/" . $game->playerHash . "/shots", "POST", $shotData, 201);
             $result = $this->call($oRequestDetails);
-            $this->validateAddShots($result, $expectedResult);
+            $this->validateAddShots($result->shotResult, $expectedResult);
         }
     }
 
-    private function validateAddShots($result, $expected)
+    private function validateAddShots($shotResult, $expected)
     {
-        if ($result !== $expected) {
-            throw new E2eException(sprintf("Incorrect shot result: %s instead of %s", $result, $expected));
+        if ($shotResult !== $expected) {
+            throw new E2eException(sprintf("Incorrect shot result: %s instead of %s", $shotResult, $expected));
         }
     }
 
@@ -348,12 +353,19 @@ class ApiRequest
         if ($curlResponse === false) {
             throw new E2eException(curl_error($this->ch));
         }
-        $response = Misc::jsonDecode($curlResponse);
-        if ($response->error !== null) {
-            throw new E2eException(print_r($response->error, true));
+
+        $curlInfo = curl_getinfo($this->ch);
+        $contentType = isset($curlInfo['content_type']) ? $curlInfo['content_type'] : "";
+        if ($contentType != "application/json") {
+            throw new E2eException("Incorrect content type returned: " . $contentType);
         }
 
-        return $response->result;
+        $expectedHttpCode = $oRequestDetails->getExpectedHttpCode();
+        if ($curlInfo['http_code'] != $expectedHttpCode) {
+            throw new E2eException(sprintf("Incorrect http code: %s instead of %s", $curlInfo['http_code'], $expectedHttpCode));
+        }
+
+        return Misc::jsonDecode($curlResponse);
     }
 }
 
@@ -362,12 +374,14 @@ class RequestDetails
     private $request;
     private $method;
     private $data;
+    private $expectedHttpCode;
 
-    public function __construct($request, $method, $data = null)
+    public function __construct($request, $method, $data = null, $expectedHttpCode = 200)
     {
         $this->request = $request;
         $this->method = strtoupper($method);
         $this->data = $data;
+        $this->expectedHttpCode = $expectedHttpCode;
     }
 
     public function getMethod()
@@ -383,6 +397,11 @@ class RequestDetails
     public function getRequest()
     {
         return $this->request;
+    }
+
+    public function getExpectedHttpCode()
+    {
+        return $this->expectedHttpCode;
     }
 }
 

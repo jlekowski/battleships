@@ -67,10 +67,12 @@ abstract class AbstractClient
         }
 
         $response = Misc::jsonDecode($curlResponse);
-        if ($response->error !== null) {
-            throw new ClientException($response->error->message, $response->error->code);
+
+        $curlInfo = curl_getinfo($this->ch);
+        if ($curlInfo['http_code'] == 404) {
+            throw new ClientException($response->message, $response->code);
         }
 
-        return $response->result;
+        return $response;
     }
 }

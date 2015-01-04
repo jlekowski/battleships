@@ -66,13 +66,14 @@ class Client extends AbstractClient implements ClientInterface
         $shotData = new \stdClass();
         $shotData->shot = $shot;
         $result = $this->call("/games/" . $oData->getPlayerHash() . "/shots", "POST", $shotData);
+        $shotResult = $result->shotResult;
 
         $oData->appendPlayerShots($shot);
-        $oData->battle->otherGround->{$shot} = $result;
-        $whoseTurn = $result == "miss" ? $oData->getOtherNumber() : $oData->getPlayerNumber();
+        $oData->battle->otherGround->{$shot} = $shotResult;
+        $whoseTurn = $shotResult == "miss" ? $oData->getOtherNumber() : $oData->getPlayerNumber();
         $oData->setWhoseTurn($whoseTurn);
 
-        return $result;
+        return $shotResult;
     }
 
     public function addChat(Data $oData, $text)
@@ -82,7 +83,7 @@ class Client extends AbstractClient implements ClientInterface
         $result = $this->call("/games/" . $oData->getPlayerHash() . "/chats", "POST", $chatData);
 
         $chatData->name = $oData->getPlayerName();
-        $chatData->time = $result;
+        $chatData->time = $result->timestamp;
         $oData->chats[] = $chatData;
     }
 

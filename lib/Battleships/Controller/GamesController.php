@@ -69,7 +69,7 @@ class GamesController extends AbstractController
     {
         $this->oManager->addChat($this->data->text);
 
-        $this->result = Misc::getUtcTime()->getTimestamp();
+        $this->result = array('timestamp' => Misc::getUtcTime()->getTimestamp());
     }
 
     /**
@@ -91,7 +91,7 @@ class GamesController extends AbstractController
         $coords = strtoupper($this->data->shot);
         $shotResult = $this->oManager->addShot($coords);
 
-        $this->result = $shotResult;
+        $this->result = array('shotResult' => $shotResult);
     }
 
     /**

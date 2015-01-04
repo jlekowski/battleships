@@ -238,11 +238,11 @@ var BattleshipsClass = function() {
             type: 'POST',
             data: {text: text},
             success: function(response) {
-                var result = response.result;
-                custom_log(result);
+                var timestamp = response.timestamp;
+                custom_log(timestamp);
                 $chatbox.prop('disabled', false);
 
-                chat_append(text, true, result);
+                chat_append(text, true, timestamp);
                 $chatbox.val("");
             }
         });
@@ -274,13 +274,13 @@ var BattleshipsClass = function() {
             type: 'POST',
             data: {shot: coords},
             success: function(response) {
-                var result = response.result;
-                custom_log(result);
+                var shotResult = response.shotResult;
+                custom_log(shotResult);
 
-                set_turn(result != "miss");
-                mark_shot(1, coords, result);
+                set_turn(shotResult != "miss");
+                mark_shot(1, coords, shotResult);
 
-                if (result == "sunk") {
+                if (shotResult == "sunk") {
                     check_game_end();
                 }
             },
@@ -423,19 +423,18 @@ var BattleshipsClass = function() {
             url: '/games/' + $("#hash").val() + '/updates/' + lastIdEvents,
             type: 'GET',
             success: function(response) {
-                var result = response.result;
-                custom_log(result);
+                custom_log(response);
 
                 if (update_execute !== false) {
                     last_timeout = setTimeout(get_updates, update_interval);
                 }
 
-                if (result === null || result === false || result.length == 0) {
+                if (response === null || response === false || response.length == 0) {
                     return false;
                 }
 
-                for (var key in result) {
-                    var updates = result[key];
+                for (var key in response) {
+                    var updates = response[key];
                     for (var i = 0; i < updates.length; i++) {
                         var update = updates[i];
 
@@ -490,20 +489,19 @@ var BattleshipsClass = function() {
             type: 'GET',
             success: function(response) {
                 var key;
-                var gameData = response.result;
-                custom_log(gameData);
+                custom_log(response);
 
-                var battle = gameData.battle;
-                var chats  = gameData.chats;
-                lastIdEvents = gameData.lastIdEvents;
+                var battle = response.battle;
+                var chats  = response.chats;
+                lastIdEvents = response.lastIdEvents;
 
-                other_started = gameData.otherStarted;
-                if (gameData.playerStarted) {
-                    start_game(gameData.whoseTurn == gameData.playerNumber);
+                other_started = response.otherStarted;
+                if (response.playerStarted) {
+                    start_game(response.whoseTurn == response.playerNumber);
                 }
 
-                for (key in gameData.playerShips) {
-                    var field = get_field_by_coords(gameData.playerShips[key], 0);
+                for (key in response.playerShips) {
+                    var field = get_field_by_coords(response.playerShips[key], 0);
                     field.addClass("ship");
                 }
 
@@ -516,7 +514,7 @@ var BattleshipsClass = function() {
                 }
 
                 for (key in chats) {
-                    chat_append(chats[key].text, chats[key].player == gameData.playerNumber, chats[key].timestamp);
+                    chat_append(chats[key].text, chats[key].player == response.playerNumber, chats[key].timestamp);
                 }
 
                 check_game_end();
