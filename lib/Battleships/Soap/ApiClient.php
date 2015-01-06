@@ -1,21 +1,39 @@
 <?php
 
-namespace Battleships\Rest;
+namespace Battleships\Soap;
 
-use Battleships\ClientInterface;
+use Battleships\ApiClientInterface;
 use Battleships\Game\Data;
+use Battleships\Misc;
 
 /**
- * Battleships\Rest\Client class
+ * Battleships\Soap\ApiClient class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.6
  * @link       http://dev.lekowski.pl
- * @since      File available since Release 0.6
+ * @since      File available since Release 0.5
  *
  */
-class Client extends AbstractClient implements ClientInterface
+class ApiClient implements ApiClientInterface
 {
+    /**
+     * @var \SoapClient
+     */
+    private $soapClient;
+
+    /**
+     * Initiate SOAP Client
+     */
+    public function __construct()
+    {
+        try {
+            $this->soapClient = new \SoapClient(WSDL_URL, array('cache_wsdl' => WSDL_CACHE_NONE, 'trace' => true));
+        } catch (\SoapFault $e) {
+            Misc::log($e);
+        }
+    }
+
     /**
      * Create game
      * @param string $name
@@ -23,68 +41,64 @@ class Client extends AbstractClient implements ClientInterface
      */
     public function createGame($name)
     {
-        $gameData = new \stdClass();
-        $gameData->name = $name;
-        $game = $this->call("/games/", "POST", $gameData);
+        $game = $this->soapClient->getGame();
 
         return new Data($game);
     }
 
     /**
-     * Get game data
+     *
      * @param string $hash
      * @return \Battleships\Game\Data
      */
     public function getGame($hash)
     {
-        $game = $this->call("/games/" . $hash, "GET");
+        $game = $this->soapClient->getGame($hash);
 
         return new Data($game);
     }
 
-    public function updateName(Data $oData, $name)
+    public function updateName(Data $oData, $playerName)
     {
-        $nameData = new \stdClass();
-        $nameData->name = $name;
-        $this->call("/games/" . $oData->getPlayerHash(), "PUT", $nameData);
-        $oData->setPlayerName($name);
+        $this->soapClient->updateName($oData->getPlayerHash(), $playerName);
+        $oData->setPlayerName($playerName);
     }
 
+    /**
+     * Add ships to start game
+     * @param \Battleships\Game\Data $oData
+     * @param array $ships
+     */
     public function addShips(Data $oData, array $ships)
     {
-        $shipsData = new \stdClass();
-        $shipsData->ships = $ships;
-        $this->call("/games/" . $oData->getPlayerHash() . "/ships", "POST", $shipsData);
+        $result = $this->soapClient->startGame($oData->getPlayerHash(), implode(",", $ships));
         $oData->setPlayerShips($ships);
-        foreach ($shipsData->ships as $ship) {
-            $oData->battle->playerGround->{$ship} = "ship";
+        foreach ($ships as $value) {
+            $oData->battle->playerGround->{$value} = "ship";
         }
+
+        return $result;
     }
 
-    public function addShot(Data $oData, $shot)
+    public function addShot(Data $oData, $coords)
     {
-        $shotData = new \stdClass();
-        $shotData->shot = $shot;
-        $result = $this->call("/games/" . $oData->getPlayerHash() . "/shots", "POST", $shotData);
-        $shotResult = $result->shotResult;
-
-        $oData->appendPlayerShots($shot);
-        $oData->battle->otherGround->{$shot} = $shotResult;
-        $whoseTurn = $shotResult == "miss" ? $oData->getOtherNumber() : $oData->getPlayerNumber();
+        $result = $this->soapClient->addShot($oData->getPlayerHash(), $coords);
+        $oData->appendPlayerShots($coords);
+        $oData->battle->otherGround->{$coords} = $result;
+        $whoseTurn = $result == "miss" ? $oData->getOtherNumber() : $oData->getPlayerNumber();
         $oData->setWhoseTurn($whoseTurn);
 
-        return $shotResult;
+        return $result;
     }
 
+    /**
+     * Add chat
+     * @param \Battleships\Game\Data $oData
+     * @param string $text
+     */
     public function addChat(Data $oData, $text)
     {
-        $chatData = new \stdClass();
-        $chatData->text = $text;
-        $result = $this->call("/games/" . $oData->getPlayerHash() . "/chats", "POST", $chatData);
-
-        $chatData->name = $oData->getPlayerName();
-        $chatData->time = $result->timestamp;
-        $oData->chats[] = $chatData;
+        // TODO: Implement addChat() method.
     }
 
     /**
@@ -94,7 +108,8 @@ class Client extends AbstractClient implements ClientInterface
      */
     public function getUpdates(Data $oData)
     {
-        $result = $this->call("/games/" . $oData->getPlayerHash() . "/updates/" . $oData->getLastIdEvents(), "GET");
+        $result = $this->soapClient->getUpdates($oData->getPlayerHash(), $oData->getLastIdEvents());
+
         foreach ($result as $action => $updates) {
             foreach ($updates as $update) {
                 $this->applyUpdate($oData, $update, $action);

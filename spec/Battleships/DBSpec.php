@@ -4,11 +4,11 @@ namespace spec\Battleships;
 
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
+use TestMocker\MockMethodsTrait;
 
-class DB extends \Battleships\DB
+class DBTest extends \Battleships\DB
 {
-    public $disabledMethods = array();
-    public $calledMethods = array();
+    use MockMethodsTrait;
 
     public function __construct() {}
 
@@ -21,33 +21,13 @@ class DB extends \Battleships\DB
     {
         return $this->handleMethod(__FUNCTION__, func_get_args());
     }
-
-    /**
-     * Call parent method or log method call and return set value
-     * @param  string $method
-     * @param  array  $args
-     * @return mixed
-     */
-    private function handleMethod($method, array $args)
-    {
-        $hasReturnValue = array_key_exists($method, $this->disabledMethods);
-        // if in_array() with no type comparison, objects may throw Exception on __toString()
-        if (!in_array($method, $this->disabledMethods, true) && !$hasReturnValue) {
-            return call_user_func_array("parent::" . $method, $args);
-        }
-
-        $this->calledMethods[$method][] = $args;
-        if ($hasReturnValue) {
-            return $this->disabledMethods[$method];
-        }
-    }
 }
 
 class DBSpec extends ObjectBehavior
 {
     public function let()
     {
-        $this->beAnInstanceOf('spec\Battleships\DB');
+        $this->beAnInstanceOf('spec\Battleships\DBTest');
     }
 
     // commented out as it serializes PDO object which cannot be serialized

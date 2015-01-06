@@ -16,20 +16,29 @@ use Battleships\Game\Manager;
  */
 class CliView
 {
+    /**
+     * @var array
+     */
     private $outputs = array();
-    private $oClient;
+    /**
+     * @var \Battleships\ApiClientInterface
+     */
+    private $oApiClient;
     /**
      * @var \Battleships\Game\Data
      */
     private $oData;
+    /**
+     * @var bool
+     */
     private $runView;
 
     /**
-     * @param \Battleships\ClientInterface $oClient
+     * @param \Battleships\ApiClientInterface $oApiClient
      */
-    public function __construct(ClientInterface $oClient)
+    public function __construct(ApiClientInterface $oApiClient)
     {
-        $this->oClient = $oClient;
+        $this->oApiClient = $oApiClient;
     }
 
     public function run()
@@ -117,7 +126,7 @@ class CliView
     private function runCommandNameUpdate()
     {
         $playerName = $this->getInput("What's your name?");
-        $this->oClient->updateName($this->oData, $playerName);
+        $this->oApiClient->updateName($this->oData, $playerName);
         $this->runCommandShow();
     }
 
@@ -126,12 +135,12 @@ class CliView
         $hash = $this->getInput("Provide game hash or press ENTER to start a new game");
         if ($hash === "") {
             $name = $this->getInput("What's your name?");
-            $this->oData = $this->oClient->createGame($name);
+            $this->oData = $this->oApiClient->createGame($name);
             if ($this->oData->getPlayerName() !== $name) {
-                $this->oClient->updateName($this->oData, $name);
+                $this->oApiClient->updateName($this->oData, $name);
             }
         } else {
-            $this->oData = $this->oClient->getGame($hash);
+            $this->oData = $this->oApiClient->getGame($hash);
         }
 
         $this->runCommandShow();
@@ -148,14 +157,14 @@ class CliView
     private function runCommandAddShips()
     {
         $ships = strtoupper($this->getInput("Set your ships"));
-        $this->oClient->addShips($this->oData, explode(",", $ships));
+        $this->oApiClient->addShips($this->oData, explode(",", $ships));
         $this->runCommandShow();
     }
 
     private function runCommandAddShot()
     {
         $shot = strtoupper($this->getInput("Shoot"));
-        $result = $this->oClient->addShot($this->oData, $shot);
+        $result = $this->oApiClient->addShot($this->oData, $shot);
         $this->runCommandShow();
         $output = $shot . ": " . $result;
         $this->outputsAppend($output);
@@ -167,7 +176,7 @@ class CliView
         echo PHP_EOL . "Waiting for " . $oldOtherName . "...";
 
         do {
-            $result = $this->oClient->getUpdates($this->oData);
+            $result = $this->oApiClient->getUpdates($this->oData);
             echo ".";
         } while ($result == false);
 

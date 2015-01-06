@@ -12,9 +12,9 @@
 
 require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "init" . DIRECTORY_SEPARATOR . "bootstrap.php";
 
-use Battleships\Rest\Client;
+use Battleships\Rest\ApiClient;
 use Battleships\CliView;
 
-$oClient = new Client(REST_URL);
-$oCliView = new CliView($oClient);
+$oApiClient = new ApiClient(REST_URL);
+$oCliView = new CliView($oApiClient);
 $oCliView->run();

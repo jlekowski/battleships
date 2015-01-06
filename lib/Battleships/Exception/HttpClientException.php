@@ -3,7 +3,7 @@
 namespace Battleships\Exception;
 
 /**
- * CURL Exception
+ * Http Client Exception
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.6
@@ -11,4 +11,4 @@ namespace Battleships\Exception;
  * @since      File available since Release 0.6
  *
  */
-class CurlException extends \Exception {}
+class HttpClientException extends \Exception {}

@@ -5,7 +5,7 @@ namespace Battleships;
 use Battleships\Game\Data;
 
 /**
- * Battleships\ClientInterface interface
+ * Battleships\ApiClientInterface interface
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.6
@@ -13,7 +13,7 @@ use Battleships\Game\Data;
  * @since      File available since Release 0.6
  *
  */
-interface ClientInterface
+interface ApiClientInterface
 {
     /**
      * Create game

@@ -2,10 +2,10 @@
 
 namespace spec\Battleships\Http;
 
-use Battleships\Http\Request;
-use Battleships\Http\Response;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
+use Battleships\Http\Request;
+use Battleships\Http\Response;
 use TestMocker\AccessProtectedTrait;
 use TestMocker\MockMethodsTrait;
 

@@ -1,36 +1,34 @@
 <?php
 
-namespace Battleships\Rest;
+namespace Battleships\Http;
 
-use Battleships\Misc;
-use Battleships\Exception\CurlException;
-use Battleships\Exception\ClientException;
+use Battleships\Exception\HttpClientException;
 
 /**
- * Battleships\Rest\AbstractClient abstract class
+ * Battleships\Http\HttpClient class
  *
  * @author     Jerzy Lekowski <jerzy@lekowski.pl>
  * @version    0.6
  * @link       http://dev.lekowski.pl
- * @since      File available since Release 0.6
+ * @since      File available since Release 0.6.1
  *
  */
-abstract class AbstractClient
+class HttpClient
 {
     /**
      * @var string
      */
-    private $baseUrl;
+    protected $baseUrl;
     /**
      * @var resource
      */
-    private $ch;
+    protected $ch;
 
     /**
      * Initiate CURL connection
      * @param string $baseUrl
      */
-    final public function __construct($baseUrl)
+    public function __construct($baseUrl)
     {
         $this->baseUrl = $baseUrl;
         $this->ch = curl_init();
@@ -41,21 +39,19 @@ abstract class AbstractClient
     /**
      * Close CURL connection
      */
-    final public function __destruct()
+    public function __destruct()
     {
         curl_close($this->ch);
     }
 
     /**
-     *
      * @param string $request
      * @param string $method
      * @param \stdClass $data
-     * @return mixed REST API response
-     * @throws \Battleships\Exception\CurlException
-     * @throws \Battleships\Exception\ClientException
+     * @return mixed CURL response
+     * @throws \Battleships\Exception\HttpClientException
      */
-    final protected function call($request, $method, \stdClass $data = null)
+    public function call($request, $method, \stdClass $data = null)
     {
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
         curl_setopt($this->ch, CURLOPT_POSTFIELDS, json_encode($data));
@@ -63,16 +59,17 @@ abstract class AbstractClient
 
         $curlResponse = curl_exec($this->ch);
         if ($curlResponse === false) {
-            throw new CurlException(curl_error($this->ch), curl_errno($this->ch));
+            throw new HttpClientException(curl_error($this->ch), curl_errno($this->ch));
         }
 
-        $response = Misc::jsonDecode($curlResponse);
+        return $curlResponse;
+    }
 
-        $curlInfo = curl_getinfo($this->ch);
-        if ($curlInfo['http_code'] == 404) {
-            throw new ClientException($response->message, $response->code);
-        }
-
-        return $response;
+    /**
+     * @return mixed
+     */
+    public function getCallInfo()
+    {
+        return curl_getinfo($this->ch);
     }
 }
