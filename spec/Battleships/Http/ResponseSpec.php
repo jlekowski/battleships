@@ -9,43 +9,6 @@ use Battleships\Http\Response;
 use TestMocker\AccessProtectedTrait;
 use TestMocker\MockMethodsTrait;
 
-class ResponseTest extends Response
-{
-    use AccessProtectedTrait, MockMethodsTrait;
-
-    public function __destruct() {} // because there's no output buffering here
-
-    public function getRestHeaders()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getErrorFormatted()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getFormatted()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function hasError()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getHeaderForError()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getHeaderForSuccess()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-}
-
 class ResponseSpec extends ObjectBehavior
 {
     public function let(Request $oRequest)
@@ -188,5 +151,42 @@ class ResponseSpec extends ObjectBehavior
                 return true;
             }
         ];
+    }
+}
+
+class ResponseTest extends Response
+{
+    use AccessProtectedTrait, MockMethodsTrait;
+
+    public function __destruct() {} // because there's no output buffering here
+
+    public function getRestHeaders()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getErrorFormatted()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getFormatted()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function hasError()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getHeaderForError()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getHeaderForSuccess()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
     }
 }

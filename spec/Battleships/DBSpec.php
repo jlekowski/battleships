@@ -6,23 +6,6 @@ use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 use TestMocker\MockMethodsTrait;
 
-class DBTest extends \Battleships\DB
-{
-    use MockMethodsTrait;
-
-    public function __construct() {}
-
-    public function prepare()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getAll()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-}
-
 class DBSpec extends ObjectBehavior
 {
     public function let()
@@ -81,5 +64,22 @@ class DBSpec extends ObjectBehavior
         $this->disabledMethods = ['getAll' => []];
         $this->getFirst('SELECT 1', ['param1', 'param2'])->shouldReturn([]);
         $this->calledMethods['getAll'][1]->shouldBe(['SELECT 1', ['param1', 'param2']]);
+    }
+}
+
+class DBTest extends \Battleships\DB
+{
+    use MockMethodsTrait;
+
+    public function __construct() {}
+
+    public function prepare()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
+    }
+
+    public function getAll()
+    {
+        return $this->handleMethod(__FUNCTION__, func_get_args());
     }
 }

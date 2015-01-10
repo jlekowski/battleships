@@ -7,11 +7,6 @@ use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 use TestMocker\AccessProtectedTrait;
 
-class RequestTest extends Request
-{
-    use AccessProtectedTrait;
-}
-
 class RequestSpec extends ObjectBehavior
 {
     public function let()
@@ -51,4 +46,9 @@ class RequestSpec extends ObjectBehavior
         $this->data = [1, 2];
         $this->getData()->shouldBe([1, 2]);
     }
+}
+
+class RequestTest extends Request
+{
+    use AccessProtectedTrait;
 }
