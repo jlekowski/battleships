@@ -39,6 +39,11 @@ php bin/client.php
 
 ## === Changelog ===
 
+* version **0.6.1**
+ * Changed REST response format
+ * Added more unit tests
+ * Updated End-to-End test
+ * Refactored DB and ApiClient Class
 * version **0.6**
  * Moved from SOAP to REST API (both supported, but SOAP will be removed in 0.7)
  * Upgraded client to jQuery v2
