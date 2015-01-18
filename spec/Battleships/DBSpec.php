@@ -73,12 +73,12 @@ class DBTest extends \Battleships\DB
 
     public function __construct() {}
 
-    public function prepare()
+    public function prepare($statement, $options = NULL)
     {
         return $this->handleMethod(__FUNCTION__, func_get_args());
     }
 
-    public function getAll()
+    public function getAll($query, array $parameters = array())
     {
         return $this->handleMethod(__FUNCTION__, func_get_args());
     }

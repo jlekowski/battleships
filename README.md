@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/jlekowski/battleships.svg)](https://travis-ci.org/jlekowski/battleships)
+
 # Battleships
 
 ## Battleships (sea battle) game for web and command line (PHP CLI)
