@@ -5,32 +5,35 @@ namespace spec\Battleships\Http;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 use Battleships\Http\Request;
-use Battleships\Http\Response;
-use TestMocker\AccessProtectedTrait;
-use TestMocker\MockMethodsTrait;
+use TestMocker\MockClassTrait;
 
 class ResponseSpec extends ObjectBehavior
 {
+    use MockClassTrait;
+
     public function let(Request $oRequest)
     {
+        $this->initMock(['__destruct']);
+
         $oRequest->getMethod()->shouldBeCalled();
-        $this->beAnInstanceOf('spec\Battleships\Http\ResponseTest');
+        $this->beAnInstanceOf('spec\Battleships\Http\Response');
         $this->beConstructedWith($oRequest);
     }
 
     public function it_is_initializable()
     {
-        $this->shouldHaveType('spec\Battleships\Http\ResponseTest');
+        $this->shouldHaveType('spec\Battleships\Http\Response');
     }
 
     public function it_can_dispatch()
     {
-        $this->disabledMethods = ['getRestHeaders', 'getFormatted' => null];
+        $this->disableMethod('getRestHeaders')
+            ->disableMethod('getFormatted');
 
         $this->dispatch();
 
-        $this->calledMethods['getRestHeaders']->shouldHaveCount(1);
-        $this->calledMethods['getFormatted']->shouldHaveCount(1);
+        $this->getMethodCalls('getRestHeaders')->shouldHaveCount(1);
+        $this->getMethodCalls('getFormatted')->shouldHaveCount(1);
     }
 
     public function it_sets_result()
@@ -46,22 +49,27 @@ class ResponseSpec extends ObjectBehavior
     public function it_can_get_rest_headers()
     {
         // no error
-        $this->disabledMethods = ['hasError' => false, 'getHeaderForError', 'getHeaderForSuccess' => 'some success'];
+        $this->disableMethod('hasError', false)
+            ->disableMethod('getHeaderForError')
+            ->disableMethod('getHeaderForSuccess', 'some success');
 
         $this->getRestHeaders()->shouldReturn('some success');
 
-        $this->calledMethods['hasError']->shouldHaveCount(1);
-        $this->calledMethods->shouldNotHaveKey('getHeaderForError');
-        $this->calledMethods['getHeaderForSuccess']->shouldHaveCount(1);
+        $this->getMethodCalls('hasError')->shouldHaveCount(1);
+        $this->getMethodCalls('getHeaderForError')->shouldBeNull();
+        $this->getMethodCalls('getHeaderForSuccess')->shouldHaveCount(1);
 
         // has error
-        $this->disabledMethods = ['hasError' => true, 'getHeaderForError' => 'some error', 'getHeaderForSuccess'];
+        $this->cleanDisabledMethods()
+            ->disableMethod('hasError', true)
+            ->disableMethod('getHeaderForError', 'some error')
+            ->disableMethod('getHeaderForSuccess');
 
         $this->getRestHeaders()->shouldReturn('some error');
 
-        $this->calledMethods['hasError']->shouldHaveCount(2);
-        $this->calledMethods['getHeaderForError']->shouldHaveCount(1);
-        $this->calledMethods['getHeaderForSuccess']->shouldHaveCount(1);
+        $this->getMethodCalls('hasError')->shouldHaveCount(2);
+        $this->getMethodCalls('getHeaderForError')->shouldHaveCount(1);
+        $this->getMethodCalls('getHeaderForSuccess')->shouldHaveCount(1);
     }
 
     public function it_sets_error()
@@ -86,12 +94,14 @@ class ResponseSpec extends ObjectBehavior
     public function it_gets_formatted_response()
     {
         // no error
-        $this->disabledMethods = ['hasError' => false];
+        $this->disableMethod('hasError', false);
         $this->result = 'my_result';
         $this->getFormatted()->shouldReturn('my_result');
 
         // with error
-        $this->disabledMethods = ['hasError' => true, 'getErrorFormatted' => 'my_error'];
+        $this->cleanDisabledMethods()
+            ->disableMethod('hasError', true)
+            ->disableMethod('getErrorFormatted', 'my_error');
         $this->getFormatted()->shouldReturn('my_error');
     }
 
@@ -151,42 +161,5 @@ class ResponseSpec extends ObjectBehavior
                 return true;
             }
         ];
-    }
-}
-
-class ResponseTest extends Response
-{
-    use AccessProtectedTrait, MockMethodsTrait;
-
-    public function __destruct() {} // because there's no output buffering here
-
-    public function getRestHeaders()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getErrorFormatted()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getFormatted()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function hasError()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getHeaderForError()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
-    }
-
-    public function getHeaderForSuccess()
-    {
-        return $this->handleMethod(__FUNCTION__, func_get_args());
     }
 }

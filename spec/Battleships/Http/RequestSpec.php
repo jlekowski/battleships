@@ -2,24 +2,26 @@
 
 namespace spec\Battleships\Http;
 
-use Battleships\Http\Request;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
-use TestMocker\AccessProtectedTrait;
+use TestMocker\MockClassTrait;
 
 class RequestSpec extends ObjectBehavior
 {
+    use MockClassTrait;
+
     public function let()
     {
+        $this->initMock();
         $_SERVER['REQUEST_METHOD'] = 'TEST';
         $_SERVER['PHP_SELF'] = '/server.php';
         $_SERVER['REQUEST_URI'] = '/games/h4s5/updates/3';
-        $this->beAnInstanceOf('spec\Battleships\Http\RequestTest');
+        $this->beAnInstanceOf('spec\Battleships\Http\Request');
     }
 
     public function it_is_initializable()
     {
-        $this->shouldHaveType('spec\Battleships\Http\RequestTest');
+        $this->shouldHaveType('spec\Battleships\Http\Request');
     }
 
     public function it_parses_http_request()
@@ -46,9 +48,4 @@ class RequestSpec extends ObjectBehavior
         $this->data = [1, 2];
         $this->getData()->shouldBe([1, 2]);
     }
-}
-
-class RequestTest extends Request
-{
-    use AccessProtectedTrait;
 }

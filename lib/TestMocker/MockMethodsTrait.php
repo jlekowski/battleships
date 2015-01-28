@@ -7,11 +7,47 @@ trait MockMethodsTrait
     /**
      * @var array
      */
-    public $disabledMethods = [];
+    private $disabledMethods = [];
     /**
      * @var array
      */
-    public $calledMethods = [];
+    private $calledMethods = [];
+
+    /**
+     * @param string $method
+     * @param mixed $returnValue
+     * @return $this
+     */
+    public function disableMethod($method, $returnValue = null)
+    {
+        $this->disabledMethods[$method] = $returnValue;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function cleanDisabledMethods()
+    {
+        $this->disabledMethods = [];
+
+        return $this;
+    }
+
+    /**
+     * @param string $method
+     * @param int $index
+     * @return mixed
+     */
+    public function getMethodCalls($method, $index = null)
+    {
+        if (!array_key_exists($method, $this->calledMethods)) {
+            return null;
+        }
+
+        return is_null($index) ? $this->calledMethods[$method] : $this->calledMethods[$method][$index];
+    }
 
     /**
      * Call parent method or log method call and return set value
@@ -21,15 +57,12 @@ trait MockMethodsTrait
      */
     private function handleMethod($method, array $args)
     {
-        $hasReturnValue = array_key_exists($method, $this->disabledMethods);
-        // if in_array() with no type comparison, objects may throw Exception on __toString()
-        if (!in_array($method, $this->disabledMethods, true) && !$hasReturnValue) {
+        if (!array_key_exists($method, $this->disabledMethods)) {
             return call_user_func_array('parent::' . $method, $args);
         }
 
         $this->calledMethods[$method][] = $args;
-        if ($hasReturnValue) {
-            return $this->disabledMethods[$method];
-        }
+
+        return $this->disabledMethods[$method];
     }
 }
