@@ -132,7 +132,17 @@ class MockClassCreator
             ? '$this->disableMethod(__FUNCTION__); '
             : '';
 
-        return $disableCode . 'return $this->handleMethod(__FUNCTION__, func_get_args());';
+        $parameters = [];
+        /** @var \ReflectionParameter $parameter */
+        foreach ($method->getParameters() as $parameter) {
+            $parameters[] = sprintf(
+                '%s$%s',
+                ($parameter->isPassedByReference() ? '&' : ''),
+                $parameter->getName()
+            );
+        }
+
+        return $disableCode . 'return $this->handleMethod(__FUNCTION__, ['.implode(', ', $parameters).']);';
     }
 
     /**
