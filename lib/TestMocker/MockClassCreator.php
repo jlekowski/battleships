@@ -9,7 +9,7 @@ class MockClassCreator
     /**
      * @var array
      */
-    private $disabledMethods = [];
+    protected $permanentlyDisabledMethods = [];
 
     /**
      * @param ObjectBehavior $spec
@@ -60,7 +60,7 @@ class MockClassCreator
      */
     public function setDisabledMethods(array $disabledMethods)
     {
-        $this->disabledMethods = $disabledMethods;
+        $this->permanentlyDisabledMethods = $disabledMethods;
 
         return $this;
     }
@@ -94,7 +94,7 @@ class MockClassCreator
                 'public %s function %s(%s) { %s }',
                 ($method->isStatic() ? 'static' : ''),
                 $method->getName(),
-                $this->getMethodParametersFormatted($method),
+                $this->getMethodParametersFormatted($method, true),
                 $this->getMethodCode($method)
             );
         }
@@ -104,52 +104,67 @@ class MockClassCreator
 
     /**
      * @param \ReflectionMethod $method
+     * @param bool $forDeclaration
      * @return string
      */
-    private function getMethodParametersFormatted(\ReflectionMethod $method)
+    protected function getMethodParametersFormatted(\ReflectionMethod $method, $forDeclaration)
     {
         $parameters = [];
         /** @var \ReflectionParameter $parameter */
         foreach ($method->getParameters() as $parameter) {
-            $parameters[] = sprintf(
-                '%s $%s %s',
-                $this->getParameterTypeHintFormatted($parameter),
-                $parameter->getName(),
-                $this->getParameterDefaultValueFormatted($parameter)
-            );
+            $parameters[] = $forDeclaration
+                ? $this->getParameterDeclarationFormatted($parameter)
+                : $this->getParameterPassFormatted($parameter);
         }
 
         return implode(', ', $parameters);
     }
 
     /**
-     * @param \ReflectionMethod $method
+     * @param \ReflectionParameter $parameter
      * @return string
      */
-    private function getMethodCode(\ReflectionMethod $method)
+    protected function getParameterDeclarationFormatted(\ReflectionParameter $parameter)
     {
-        $disableCode = in_array($method->getName(), $this->disabledMethods)
-            ? '$this->disableMethod(__FUNCTION__); '
-            : '';
-
-        $parameters = [];
-        /** @var \ReflectionParameter $parameter */
-        foreach ($method->getParameters() as $parameter) {
-            $parameters[] = sprintf(
-                '%s$%s',
-                ($parameter->isPassedByReference() ? '&' : ''),
-                $parameter->getName()
-            );
-        }
-
-        return $disableCode . 'return $this->handleMethod(__FUNCTION__, ['.implode(', ', $parameters).']);';
+        return sprintf(
+            '%s $%s %s',
+            $this->getParameterTypeHintFormatted($parameter),
+            $parameter->getName(),
+            $this->getParameterDefaultValueFormatted($parameter)
+        );
     }
 
     /**
      * @param \ReflectionParameter $parameter
      * @return string
      */
-    private function getParameterTypeHintFormatted(\ReflectionParameter $parameter)
+    protected function getParameterPassFormatted(\ReflectionParameter $parameter)
+    {
+        return sprintf(
+            '%s$%s',
+            ($parameter->isPassedByReference() ? '&' : ''),
+            $parameter->getName()
+        );
+    }
+
+    /**
+     * @param \ReflectionMethod $method
+     * @return string
+     */
+    protected function getMethodCode(\ReflectionMethod $method)
+    {
+        return sprintf(
+            '%s return $this->handleMethod(__FUNCTION__, [%s]);',
+            (in_array($method->getName(), $this->permanentlyDisabledMethods) ? '$this->disableMethod(__FUNCTION__);' : ''),
+            $this->getMethodParametersFormatted($method, false)
+        );
+    }
+
+    /**
+     * @param \ReflectionParameter $parameter
+     * @return string
+     */
+    protected function getParameterTypeHintFormatted(\ReflectionParameter $parameter)
     {
         if ($parameterClass = $parameter->getClass()) {
             $typeHint = '\\' . $parameterClass->getName();
@@ -168,7 +183,7 @@ class MockClassCreator
      * @param \ReflectionParameter $parameter
      * @return string
      */
-    private function getParameterDefaultValueFormatted(\ReflectionParameter $parameter)
+    protected function getParameterDefaultValueFormatted(\ReflectionParameter $parameter)
     {
         if ($parameter->isDefaultValueAvailable()) {
             $defaultValue = '= ' . var_export($parameter->getDefaultValue(), true);
