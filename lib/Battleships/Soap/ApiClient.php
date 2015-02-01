@@ -109,7 +109,6 @@ class ApiClient implements ApiClientInterface
     public function getUpdates(Data $oData)
     {
         $result = $this->soapClient->getUpdates($oData->getPlayerHash(), $oData->getLastIdEvents());
-
         foreach ($result as $action => $updates) {
             foreach ($updates as $update) {
                 $this->applyUpdate($oData, $update, $action);

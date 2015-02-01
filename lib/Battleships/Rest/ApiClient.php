@@ -6,6 +6,7 @@ use Battleships\ApiClientInterface;
 use Battleships\Http\HttpClient;
 use Battleships\Game\Data;
 use Battleships\Exception\ApiClientException;
+use Battleships\Misc;
 
 /**
  * Battleships\Rest\ApiClient class
