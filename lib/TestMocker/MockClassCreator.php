@@ -45,7 +45,7 @@ class MockClassCreator
             'namespace %s {
                 class %s extends \%s
                 {
-                    use \TestMocker\AccessProtectedTrait, \TestMocker\MockMethodsTrait;
+                    use \TestMocker\AccessProtectedTrait, \TestMocker\MockMethodsTrait, \TestMocker\MockFunctionsTrait;
 
                     %s
                 }
@@ -137,11 +137,9 @@ class MockClassCreator
             }
 
             $functionDeclarations[] = sprintf(
-                'function %s(%s) { return true ? \spec\Battleships\Http\HttpClient:: : \%s(%s); }',
+                'function %s(%s) { return \spec\Battleships\Http\HttpClient::getFunctionResponse(__FUNCTION__, func_get_args()); }',
                 $reflectionFunction->getName(),
-                $this->getFunctionParametersFormatted($reflectionFunction, true),
-                $reflectionFunction->getName(),
-                $this->getFunctionParametersFormatted($reflectionFunction, false)
+                $this->getFunctionParametersFormatted($reflectionFunction, true)
             );
         }
 

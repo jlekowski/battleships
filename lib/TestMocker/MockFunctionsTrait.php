@@ -7,11 +7,11 @@ trait MockFunctionsTrait
     /**
      * @var array
      */
-    private $disabledFunctions = [];
+    private static $disabledFunctions = [];
     /**
      * @var array
      */
-    private $calledFunctions = [];
+    private static $calledFunctions = [];
 
     /**
      * @param string $function
@@ -20,7 +20,7 @@ trait MockFunctionsTrait
      */
     public function disableFunction($function, $returnValue = null)
     {
-        $this->disabledFunctions[$function] = $returnValue;
+        self::$disabledFunctions[$function] = $returnValue;
 
         return $this;
     }
@@ -30,7 +30,7 @@ trait MockFunctionsTrait
      */
     public function cleanDisabledFunctions()
     {
-        $this->disabledFunctions = [];
+        self::$disabledFunctions = [];
 
         return $this;
     }
@@ -42,11 +42,11 @@ trait MockFunctionsTrait
      */
     public function getFunctionCalls($function, $index = null)
     {
-        if (!array_key_exists($function, $this->calledFunctions)) {
+        if (!array_key_exists($function, self::$calledFunctions)) {
             return null;
         }
 
-        return is_null($index) ? $this->calledFunctions[$function] : $this->calledFunctions[$function][$index];
+        return is_null($index) ? self::$calledFunctions[$function] : self::$calledFunctions[$function][$index];
     }
 
     /**
@@ -55,14 +55,14 @@ trait MockFunctionsTrait
      * @param array $args
      * @return mixed
      */
-    public function getFunctionResponse($function, array $args)
+    public static function getFunctionResponse($function, array $args)
     {
-        if (!array_key_exists($function, $this->disabledFunctions)) {
-            return call_user_func_array('parent::' . $function, $args);
+        if (!array_key_exists($function, self::$disabledFunctions)) {
+            return call_user_func_array($function, $args);
         }
 
-        $this->calledFunctions[$function][] = $args;
+        self::$calledFunctions[$function][] = $args;
 
-        return $this->disabledFunctions[$function];
+        return self::$disabledFunctions[$function];
     }
 }
