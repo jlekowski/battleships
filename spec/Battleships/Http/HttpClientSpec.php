@@ -12,10 +12,12 @@ class HttpClientSpec extends ObjectBehavior
 
     public function it_is_initializable()
     {
-        $this->initMock(['__destruct']);
+        $this->initMock(['__destruct'], ['curl_init']);
 
         $this->beAnInstanceOf('spec\Battleships\Http\HttpClient');
         $this->beConstructedWith('http://url');
         $this->shouldHaveType('spec\Battleships\Http\HttpClient');
+        $this->ch->shouldBe('test');
+//        $this->ch->shouldBeResource();
     }
 }

@@ -51,8 +51,8 @@ trait MockMethodsTrait
 
     /**
      * Call parent method or log method call and return set value
-     * @param  string $method
-     * @param  array $args
+     * @param string $method
+     * @param array $args
      * @return mixed
      */
     private function handleMethod($method, array $args)

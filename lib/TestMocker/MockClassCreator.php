@@ -10,6 +10,10 @@ class MockClassCreator
      * @var array
      */
     protected $permanentlyDisabledMethods = [];
+    /**
+     * @var array
+     */
+    protected $disabledFunctions = [];
 
     /**
      * @param ObjectBehavior $spec
@@ -38,19 +42,25 @@ class MockClassCreator
         }
 
         $classCode = sprintf(
-            'namespace %s;
+            'namespace %s {
+                class %s extends \%s
+                {
+                    use \TestMocker\AccessProtectedTrait, \TestMocker\MockMethodsTrait;
 
-            class %s extends \%s
-            {
-                use \TestMocker\AccessProtectedTrait, \TestMocker\MockMethodsTrait;
-
+                    %s
+                }
+            }
+            namespace %s {
                 %s
             }',
             $newNamespace,
             $shortClassName,
             $reflectionClass->getName(),
-            $this->getMethodDeclarationsFormatted($reflectionClass)
+            $this->getMethodDeclarationsFormatted($reflectionClass),
+            $reflectionClass->getNamespaceName(),
+            $this->getFunctionDeclarationsFormatted($reflectionClass)
         );
+        echo $classCode;
         eval($classCode);
     }
 
@@ -61,6 +71,17 @@ class MockClassCreator
     public function setDisabledMethods(array $disabledMethods)
     {
         $this->permanentlyDisabledMethods = $disabledMethods;
+
+        return $this;
+    }
+
+    /**
+     * @param array $disabledFunctions
+     * @return $this
+     */
+    public function setDisabledFunctions(array $disabledFunctions)
+    {
+        $this->disabledFunctions = $disabledFunctions;
 
         return $this;
     }
@@ -94,7 +115,7 @@ class MockClassCreator
                 'public %s function %s(%s) { %s }',
                 ($method->isStatic() ? 'static' : ''),
                 $method->getName(),
-                $this->getMethodParametersFormatted($method, true),
+                $this->getFunctionParametersFormatted($method, true),
                 $this->getMethodCode($method)
             );
         }
@@ -103,15 +124,40 @@ class MockClassCreator
     }
 
     /**
-     * @param \ReflectionMethod $method
+     * @param \ReflectionClass $reflectionClass
+     * @return string
+     * @throws \Exception
+     */
+    private function getFunctionDeclarationsFormatted(\ReflectionClass $reflectionClass)
+    {
+        foreach ($this->disabledFunctions as $functionName) {
+            $reflectionFunction = new \ReflectionFunction($functionName);
+            if (!$reflectionFunction) {
+                throw new \Exception(sprintf('Function %s does not exist', $functionName));
+            }
+
+            $functionDeclarations[] = sprintf(
+                'function %s(%s) { return true ? \spec\Battleships\Http\HttpClient:: : \%s(%s); }',
+                $reflectionFunction->getName(),
+                $this->getFunctionParametersFormatted($reflectionFunction, true),
+                $reflectionFunction->getName(),
+                $this->getFunctionParametersFormatted($reflectionFunction, false)
+            );
+        }
+
+        return implode(PHP_EOL, $functionDeclarations);
+    }
+
+    /**
+     * @param \ReflectionFunctionAbstract $function
      * @param bool $forDeclaration
      * @return string
      */
-    protected function getMethodParametersFormatted(\ReflectionMethod $method, $forDeclaration)
+    protected function getFunctionParametersFormatted(\ReflectionFunctionAbstract $function, $forDeclaration)
     {
         $parameters = [];
         /** @var \ReflectionParameter $parameter */
-        foreach ($method->getParameters() as $parameter) {
+        foreach ($function->getParameters() as $parameter) {
             $parameters[] = $forDeclaration
                 ? $this->getParameterDeclarationFormatted($parameter)
                 : $this->getParameterPassFormatted($parameter);
@@ -156,7 +202,7 @@ class MockClassCreator
         return sprintf(
             '%s return $this->handleMethod(__FUNCTION__, [%s]);',
             (in_array($method->getName(), $this->permanentlyDisabledMethods) ? '$this->disableMethod(__FUNCTION__);' : ''),
-            $this->getMethodParametersFormatted($method, false)
+            $this->getFunctionParametersFormatted($method, false)
         );
     }
 
