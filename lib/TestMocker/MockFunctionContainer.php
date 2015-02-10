@@ -2,7 +2,7 @@
 
 namespace TestMocker;
 
-trait MockFunctionsTrait
+class MockFunctionContainer
 {
     /**
      * @var array
@@ -16,23 +16,23 @@ trait MockFunctionsTrait
     /**
      * @param string $function
      * @param mixed $returnValue
-     * @return $this
+     * @return self
      */
-    public function disableFunction($function, $returnValue = null)
+    public static function disableFunction($function, $returnValue = null)
     {
         self::$disabledFunctions[$function] = $returnValue;
 
-        return $this;
+        return self;
     }
 
     /**
-     * @return $this
+     * @return self
      */
     public function cleanDisabledFunctions()
     {
         self::$disabledFunctions = [];
 
-        return $this;
+        return self;
     }
 
     /**
@@ -40,7 +40,7 @@ trait MockFunctionsTrait
      * @param int $index
      * @return mixed
      */
-    public function getFunctionCalls($function, $index = null)
+    public static function getFunctionCalls($function, $index = null)
     {
         if (!array_key_exists($function, self::$calledFunctions)) {
             return null;

@@ -41,7 +41,7 @@ class HttpClient
      */
     public function __destruct()
     {
-        curl_close($this->ch);
+//        curl_close($this->ch);
     }
 
     /**
