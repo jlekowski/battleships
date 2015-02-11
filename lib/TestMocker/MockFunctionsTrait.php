@@ -1,4 +1,7 @@
 <?php
+/**
+ * @todo permanently disabled functions and methods should be overwritable during tests
+ */
 
 namespace TestMocker;
 
@@ -16,13 +19,22 @@ trait MockFunctionsTrait
     /**
      * @param string $function
      * @param mixed $returnValue
-     * @return $this
      */
-    public function disableFunction($function, $returnValue = null)
+    public static function disableFunction($function, $returnValue = null)
     {
-        self::$disabledFunctions[$function] = $returnValue;
+        $reflectionFunction = new \ReflectionFunction($function);
+        self::$disabledFunctions[$reflectionFunction->getShortName()] = $returnValue;
+    }
 
-        return $this;
+    public function disable($function, $returnValue = null)
+    {
+        $reflectionFunction = new \ReflectionFunction($function);
+        $r = new \ReflectionClass($this);
+        if (function_exists(sprintf('\%s\%s', str_replace('spec\\', '', $r->getNamespaceName()), $reflectionFunction->getShortName()))) {
+
+        }
+
+        self::$disabledFunctions[$reflectionFunction->getShortName()] = $returnValue;
     }
 
     /**
@@ -42,11 +54,13 @@ trait MockFunctionsTrait
      */
     public function getFunctionCalls($function, $index = null)
     {
-        if (!array_key_exists($function, self::$calledFunctions)) {
+        $reflectionFunction = new \ReflectionFunction($function);
+        $functionName = $reflectionFunction->getShortName();
+        if (!array_key_exists($functionName, self::$calledFunctions)) {
             return null;
         }
 
-        return is_null($index) ? self::$calledFunctions[$function] : self::$calledFunctions[$function][$index];
+        return is_null($index) ? self::$calledFunctions[$functionName] : self::$calledFunctions[$functionName][$index];
     }
 
     /**
@@ -57,13 +71,14 @@ trait MockFunctionsTrait
      */
     public static function getFunctionResponse($function, array $args)
     {
-        if (!array_key_exists($function, self::$disabledFunctions)) {
-            $reflectionFunction = new \ReflectionFunction($function);
-            return call_user_func_array($reflectionFunction->getShortName(), $args);
+        $reflectionFunction = new \ReflectionFunction($function);
+        $functionName = $reflectionFunction->getShortName();
+        if (!array_key_exists($functionName, self::$disabledFunctions)) {
+            return call_user_func_array($functionName, $args);
         }
 
-        self::$calledFunctions[$function][] = $args;
+        self::$calledFunctions[$functionName][] = $args;
 
-        return self::$disabledFunctions[$function];
+        return self::$disabledFunctions[$functionName];
     }
 }

@@ -13,7 +13,7 @@ class MockClassCreator
     /**
      * @var array
      */
-    protected $disabledFunctions = [];
+    protected $permanentlyDisabledFunctions = [];
 
     /**
      * @param ObjectBehavior $spec
@@ -36,8 +36,9 @@ class MockClassCreator
 
         $newNamespace = $this->getNamespace($reflectionClass, $topLevelNamespace);
         $shortClassName = $reflectionClass->getShortName();
+        $fullMockClassName = sprintf('%s\%s', $newNamespace, $shortClassName);
         // cannot redeclare existing class
-        if (class_exists(sprintf('%s\%s', $newNamespace, $shortClassName))) {
+        if (class_exists($fullMockClassName)) {
             return;
         }
 
@@ -58,7 +59,7 @@ class MockClassCreator
             $reflectionClass->getName(),
             $this->getMethodDeclarationsFormatted($reflectionClass),
             $reflectionClass->getNamespaceName(),
-            $this->getFunctionDeclarationsFormatted($reflectionClass)
+            $this->getFunctionDeclarationsFormatted($fullMockClassName)
         );
         echo $classCode;
         eval($classCode);
@@ -81,7 +82,7 @@ class MockClassCreator
      */
     public function setDisabledFunctions(array $disabledFunctions)
     {
-        $this->disabledFunctions = $disabledFunctions;
+        $this->permanentlyDisabledFunctions = $disabledFunctions;
 
         return $this;
     }
@@ -124,22 +125,23 @@ class MockClassCreator
     }
 
     /**
-     * @param \ReflectionClass $reflectionClass
+     * @param string $fullMockClassName
      * @return string
      * @throws \Exception
      */
-    private function getFunctionDeclarationsFormatted(\ReflectionClass $reflectionClass)
+    private function getFunctionDeclarationsFormatted($fullMockClassName)
     {
-        foreach ($this->disabledFunctions as $functionName) {
+        foreach ($this->permanentlyDisabledFunctions as $functionName) {
             $reflectionFunction = new \ReflectionFunction($functionName);
             if (!$reflectionFunction) {
                 throw new \Exception(sprintf('Function %s does not exist', $functionName));
             }
 
             $functionDeclarations[] = sprintf(
-                'function %s(%s) { return \spec\Battleships\Http\HttpClient::getFunctionResponse(__FUNCTION__, func_get_args()); }',
+                'function %s(%s) { %s }',
                 $reflectionFunction->getName(),
-                $this->getFunctionParametersFormatted($reflectionFunction, true)
+                $this->getFunctionParametersFormatted($reflectionFunction, true),
+                $this->getFunctionCode($reflectionFunction, $fullMockClassName)
             );
         }
 
@@ -201,6 +203,24 @@ class MockClassCreator
             '%s return $this->handleMethod(__FUNCTION__, [%s]);',
             (in_array($method->getName(), $this->permanentlyDisabledMethods) ? '$this->disableMethod(__FUNCTION__);' : ''),
             $this->getFunctionParametersFormatted($method, false)
+        );
+    }
+
+    /**
+     * @param \ReflectionFunction $function
+     * @param string $fullMockClassName
+     * @return string
+     */
+    private function getFunctionCode(\ReflectionFunction $function, $fullMockClassName)
+    {
+        return sprintf(
+            '%s return \%s::getFunctionResponse(__FUNCTION__, [%s]);',
+            (in_array($function->getName(), $this->permanentlyDisabledFunctions)
+                ? sprintf('\%s::disableFunction(__FUNCTION__);', $fullMockClassName)
+                : ''
+            ),
+            $fullMockClassName,
+            $this->getFunctionParametersFormatted($function, false)
         );
     }
 
