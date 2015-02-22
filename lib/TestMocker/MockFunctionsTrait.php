@@ -13,26 +13,43 @@ trait MockFunctionsTrait
      */
     private static $calledFunctions = [];
 
+//    /**
+//     * @param $name
+//     * @param array $arguments
+//     */
+//    public function __call($name, array $arguments)
+//    {
+//        $traitStaticMethods = ['disableFunction', 'getFunctionCalls', 'cleanDisabledFunctions', 'getFunctionResponse'];
+//        if (in_array($name, $traitStaticMethods)) {
+//
+//        }
+//
+//
+////        method_exists($this, $name);
+////        $method = new \ReflectionMethod($this, $name);
+////        if ($method->isStatic()) return true;
+//    }
+
     /**
      * @param string $function
      * @param mixed $returnValue
-     * @return $this
      */
-    public function disableFunction($function, $returnValue = null)
+    public static function disableFunction($function, $returnValue = null)
     {
-        self::$disabledFunctions[$function] = $returnValue;
+        var_dump($function, function_exists($function));
+        if (!function_exists($function)) {
+            // create function
+        }
 
-        return $this;
+        self::$disabledFunctions[$function] = $returnValue;
     }
 
     /**
-     * @return $this
+     * Clean disabled functions
      */
-    public function cleanDisabledFunctions()
+    public static function cleanDisabledFunctions()
     {
         self::$disabledFunctions = [];
-
-        return $this;
     }
 
     /**
@@ -40,7 +57,7 @@ trait MockFunctionsTrait
      * @param int $index
      * @return mixed
      */
-    public function getFunctionCalls($function, $index = null)
+    public static function getFunctionCalls($function, $index = null)
     {
         if (!array_key_exists($function, self::$calledFunctions)) {
             return null;

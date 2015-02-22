@@ -4,33 +4,24 @@ namespace TestMocker;
 
 use PhpSpec\ObjectBehavior;
 
-class MockClassCreator
+class MockCreator
 {
-    /**
-     * @var array
-     */
-    protected $permanentlyDisabledMethods = [];
-    /**
-     * @var array
-     */
-    protected $disabledFunctions = [];
-
     /**
      * @param ObjectBehavior $spec
      */
-    public function createMockClassOfSpec(ObjectBehavior $spec)
+    public function createClassOfSpec(ObjectBehavior $spec)
     {
         // Spec classes live in 'spec' namespace and are name after suffixing original class name with 'Spec'
         // e.g. spec\MyNamespace\MyClassSpec -> MyNamespace\MyClass
-        $specedClass = preg_replace('/(^spec\\\)|(Spec$)/', '', get_class($spec));
-        $this->createMockClass($specedClass, 'spec');
+        $mockedClass = preg_replace('/(^spec\\\)|(Spec$)/', '', get_class($spec));
+        $this->createClass($mockedClass, 'spec');
     }
 
     /**
      * @param string $className
      * @param string $topLevelNamespace
      */
-    public function createMockClass($className, $topLevelNamespace)
+    public function createClass($className, $topLevelNamespace)
     {
         $reflectionClass = new \ReflectionClass($className);
 
@@ -41,49 +32,47 @@ class MockClassCreator
             return;
         }
 
-        $classCode = sprintf(
-            'namespace %s {
+        $classCode = sprintf('
+            namespace %s
+            {
                 class %s extends \%s
                 {
-                    use \TestMocker\AccessProtectedTrait, \TestMocker\MockMethodsTrait, \TestMocker\MockFunctionsTrait;
+                    use \TestMocker\AccessProtectedTrait, \TestMocker\MockMethodHandleTrait;
 
                     %s
                 }
-            }
-            namespace %s {
-                %s
             }',
             $newNamespace,
             $shortClassName,
             $reflectionClass->getName(),
-            $this->getMethodDeclarationsFormatted($reflectionClass),
-            $reflectionClass->getNamespaceName(),
-            $this->getFunctionDeclarationsFormatted($reflectionClass)
+            $this->getMethodDeclarationsFormatted($reflectionClass)
         );
-        echo "\n$classCode\n";
+//        echo "\n$classCode\n";
         eval($classCode);
     }
 
     /**
-     * @param array $disabledMethods
-     * @return $this
+     * @param string $function
+     * @param string $namespace
+     * @throws \Exception
      */
-    public function setDisabledMethods(array $disabledMethods)
+    public function createFunction($function, $namespace)
     {
-        $this->permanentlyDisabledMethods = $disabledMethods;
+        if (function_exists(sprintf('\%s\%s', $namespace, $function))) {
+            return;
+        }
 
-        return $this;
-    }
+        $functionCode = sprintf('
+            namespace %s
+            {
+                %s
+            }',
+            $namespace,
+            $this->getFunctionDeclarationsFormatted($function)
+        );
 
-    /**
-     * @param array $disabledFunctions
-     * @return $this
-     */
-    public function setDisabledFunctions(array $disabledFunctions)
-    {
-        $this->disabledFunctions = $disabledFunctions;
-
-        return $this;
+//        echo "\n$functionCode\n";
+        eval($functionCode);
     }
 
     /**
@@ -124,27 +113,26 @@ class MockClassCreator
     }
 
     /**
-     * @param \ReflectionClass $reflectionClass
+     * @param string $function
      * @return string
      * @throws \Exception
      */
-    private function getFunctionDeclarationsFormatted(\ReflectionClass $reflectionClass)
+    private function getFunctionDeclarationsFormatted($function)
     {
-        $functionDeclarations = [];
-        foreach ($this->disabledFunctions as $functionName) {
-            $reflectionFunction = new \ReflectionFunction($functionName);
-            if (!$reflectionFunction) {
-                throw new \Exception(sprintf('Function %s does not exist', $functionName));
-            }
-
-            $functionDeclarations[] = sprintf(
-                'function %s(%s) { return \spec\Battleships\Http\HttpClient::getFunctionResponse(__FUNCTION__, func_get_args()); }',
-                $reflectionFunction->getName(),
-                $this->getFunctionParametersFormatted($reflectionFunction, true)
-            );
+        if (!function_exists($function)) {
+            throw new \Exception(sprintf('Function %s does not exist', $function));
         }
 
-        return implode(PHP_EOL, $functionDeclarations);
+        $reflectionFunction = new \ReflectionFunction($function);
+        $functionDeclaration = sprintf('
+            function %s(%s) {
+                return \TestMocker\MockCallManager::getInstance()->getFunctionResponse(__FUNCTION__, func_get_args());
+            }',
+            $reflectionFunction->getName(),
+            $this->getFunctionParametersFormatted($reflectionFunction, true)
+        );
+
+        return $functionDeclaration;
     }
 
     /**
@@ -199,8 +187,7 @@ class MockClassCreator
     protected function getMethodCode(\ReflectionMethod $method)
     {
         return sprintf(
-            '%s return $this->handleMethod(__FUNCTION__, [%s]);',
-            (in_array($method->getName(), $this->permanentlyDisabledMethods) ? '$this->disableMethod(__FUNCTION__);' : ''),
+            'return $this->handleMethod(__FUNCTION__, [%s]);',
             $this->getFunctionParametersFormatted($method, false)
         );
     }
