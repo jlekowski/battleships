@@ -1,1 +1,4 @@
 formatter.name: pretty
+
+extensions:
+    - TestMocker\PhpSpecExtension\Extension

@@ -54,6 +54,12 @@ class HttpClientSpec extends ObjectBehavior
         $this->mockCallManager->mockFunction('curl_exec', 'Battleships\Http', 'curl response');
 
         $this->call('/my/path', 'GET')->shouldReturn('curl response');
+        printf("\nthis class: %s\n", get_class($this));
+        printf("\nthis->ch class: %s\n", get_class($this->ch));
+        printf("\nthis class: %s\n", get_class($this));
+        printf("\nthis->->mockFunction('curl_getinfo', 'Battleships\Http', 'info') class: %s\n", get_class($this->mockFunction('curl_getinfo', 'Battleships\Http', 'info')));
+        printf("\nthis->call('/my/path', 'GET') class: %s\n", get_class($this->call('/my/path', 'GET')));
+
 
         $this->mockCallManager->getCalls('Battleships\Http\curl_setopt')
             ->shouldHaveCount(7);
