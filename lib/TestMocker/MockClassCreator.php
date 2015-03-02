@@ -60,7 +60,7 @@ class MockClassCreator
             $reflectionClass->getNamespaceName(),
             $this->getFunctionDeclarationsFormatted($reflectionClass)
         );
-        echo "\n$classCode\n";
+//        echo "\n$classCode\n";
         eval($classCode);
     }
 

@@ -7,11 +7,16 @@ use PhpSpec\ObjectBehavior;
 class MockCreator
 {
     /**
+     * @var string
+     */
+    protected $mockClassName;
+
+    /**
      * @param ObjectBehavior $spec
      */
     public function createClassOfSpec(ObjectBehavior $spec)
     {
-        // Spec classes live in 'spec' namespace and are name after suffixing original class name with 'Spec'
+        // Spec classes live in 'spec' namespace and are named by suffixing original class name with 'Spec'
         // e.g. spec\MyNamespace\MyClassSpec -> MyNamespace\MyClass
         $mockedClass = preg_replace('/(^spec\\\)|(Spec$)/', '', get_class($spec));
         $this->createClass($mockedClass, 'spec');
@@ -27,8 +32,9 @@ class MockCreator
 
         $newNamespace = $this->getNamespace($reflectionClass, $topLevelNamespace);
         $shortClassName = $reflectionClass->getShortName();
+        $this->mockClassName = sprintf('%s\%s', $newNamespace, $shortClassName);
         // cannot redeclare existing class
-        if (class_exists(sprintf('%s\%s', $newNamespace, $shortClassName))) {
+        if (class_exists($this->mockClassName)) {
             return;
         }
 
@@ -73,6 +79,14 @@ class MockCreator
 
 //        echo "\n$functionCode\n";
         eval($functionCode);
+    }
+
+    /**
+     * @return string
+     */
+    public function getMockClassName()
+    {
+        return $this->mockClassName;
     }
 
     /**

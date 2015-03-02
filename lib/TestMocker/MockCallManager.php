@@ -105,12 +105,12 @@ class MockCallManager
     }
 
     /**
-     * @param string $callable
+     * @param string $callableName
      * @return bool
      */
-    public function isMocked($callable)
+    public function isMocked($callableName)
     {
-        return array_key_exists($callable, $this->mockedCallables);
+        return array_key_exists($callableName, $this->mockedCallables);
     }
 
     /**
@@ -135,10 +135,5 @@ class MockCallManager
         $reflectionFunction = new \ReflectionFunction($function);
 
         return call_user_func_array($reflectionFunction->getShortName(), $args);
-    }
-
-    public function __destruct()
-    {
-        echo "\nDESTRUCTED\n";
     }
 }
