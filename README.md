@@ -12,6 +12,9 @@ OR
 from command line run:
 php bin/client.php
 
+### LINKS
+* https://github.com/jlekowski/battleships-offline - offline version to play on one screen
+
 ## === Installation ===
 1. Download from https://github.com/jlekowski/battleships/
 2. Copy to your web server directory (advised to point domain to public folder)
