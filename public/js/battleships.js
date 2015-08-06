@@ -1,3 +1,4 @@
+'use strict';
 
 /**
  * Battleships class for REST API
@@ -12,40 +13,40 @@
  */
 
 var BattleshipsClass = function() {
-    // log events, updates managements
-    var debug = true;
+    // events log management
+    var debug = true,
     // battle boards axis Y legend
-    var axis_y = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        axisY = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
     // battle boards axis X legend
-    var axis_x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        axisX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     // keys after pushing which we type in chatbox (A-Z, 0-9, :,._+)
-    var chatbox_keys = "48-57, 59, 65-90, 96-105, 110, 188-191, 219-222";
+        chatboxKeys = '48-57, 59, 65-90, 96-105, 110, 188-191, 219-222',
     // whether the game has started
-    var game_started = false;
+        gameStarted = false,
     // whether the game has ended
-    var game_ended = false;
+        gameEnded = false,
     // whether player started the game
-    var player_started = false;
+        playerStarted = false,
     // whether opponent started the game
-    var other_started = false;
+        otherStarted = false,
     // prevents shooting (when game not started or other player's turn)
-    var shot_prevent = true;
-    // true - updates are requested (updating ON), false - you can start requesting updates (updating OFF);
-    var update_execute = false;
+        shotPrevent = true,
+    // true - updates are requested (updating ON), false - you can start requesting updates (updating OFF),
+        updateExecute = false,
     // interval between update calls
-    var update_interval = 3000;
+        updateInterval = 3000,
     // prevents focusing on chatbox (usually when pressing ctrl/alt + chatbox_key)
-    var focus_prevent = false;
+        focusPrevent = false,
     // id of the last event retrieved from API
-    var lastIdEvents = 0;
+        lastIdEvents = 0,
     // updates AJAX object
-    var updateXHR = null;
+        updateXHR = null,
     // battle boards
-    var $battleground = null;
+        $battleground = null,
     // chatbox
-    var $chatbox = null;
+        $chatbox = null,
     // setTimeout() return value when waiting update_interval for a new update call
-    var last_timeout = null;
+        lastIimeout = null;
 
     this.run = function () {
         // default settings for AJAX calls
@@ -62,12 +63,12 @@ var BattleshipsClass = function() {
             }
         });
 
-        $battleground = $("div:gt(0) div:not(:first-child)", "div.board");
+        $battleground = $('div:gt(0) div:not(:first-child)', 'div.board');
         $battleground.board = function(index) {
             return index === 0 ? $battleground.slice(0, 100) : $battleground.slice(100);
         };
 
-        $chatbox = $(":text", "#chatbox");
+        $chatbox = $(':text', '#chatbox');
 
         // parse key range to array
         parse_chatbox_keys();
@@ -78,29 +79,29 @@ var BattleshipsClass = function() {
         $battleground.on('click', battlegroundClickCallback);
 
         // starting the game
-        $("#start").on('click', startClickCallback);
+        $('#start').on('click', startClickCallback);
 
         // updating player's name
-        $("#name_update").on('click', nameUpdateClickCallback)
-            .siblings(":text").on({keyup: nameUpdateTextKeyupCallback, blur: nameUpdateTextBlurCallback});
+        $('#name_update').on('click', nameUpdateClickCallback)
+            .siblings(':text').on({keyup: nameUpdateTextKeyupCallback, blur: nameUpdateTextBlurCallback});
 
         // updates management
-        $("#update").on('click', updateClickCallback);
+        $('#update').on('click', updateClickCallback);
 
         // starts new game
-        $("#new_game").on('click', newGameClickCallback);
+        $('#new_game').on('click', newGameClickCallback);
 
         // send chat text
         $chatbox.on('keyup', chatboxKeyupCallback);
 
         // shoot randomly
-        $("#random_shot").on('click', random_shot);
+        $('#random_shot').on('click', random_shot);
 
         // set ships randomly
-        $("#random_ships").on('click', {retry: 2}, random_ships);
+        $('#random_ships').on('click', {retry: 2}, random_ships);
 
         if (debug === true) {
-            $("#update, div.log").show();
+            $('#update, div.log').show();
         }
 
         // first call to load ships, battle and chats
@@ -110,11 +111,11 @@ var BattleshipsClass = function() {
     function documentKeydownCallback(event) {
         // if ctr or alt pressed
         if ((event.which == 17) || (event.which == 18)) {
-            focus_prevent = true;
+            focusPrevent = true;
             return true;
         }
 
-        if (focus_prevent || $(event.target).is(":text") || ($.inArray(event.which, chatbox_keys) == -1)) {
+        if (focusPrevent || $(event.target).is(':text') || ($.inArray(event.which, chatboxKeys) == -1)) {
             return true;
         }
 
@@ -122,29 +123,29 @@ var BattleshipsClass = function() {
     }
 
     function documentKeyupCallback() {
-        focus_prevent = false;
+        focusPrevent = false;
     }
 
     function battlegroundClickCallback() {
         // marking opponents ships
         if ($battleground.index(this) >= 100) {
             shot(this);
-        } else if (!player_started) {
+        } else if (!playerStarted) {
             // if game not started set the ship
-            $(this).toggleClass("ship");
+            $(this).toggleClass('ship');
         }
     }
 
     function startClickCallback() {
-        if (player_started) {
-            alert("You have already started the game");
+        if (playerStarted) {
+            alert('You have already started the game');
             return false;
         }
 
-        var $ships = $battleground.board(0).filter(".ship");
+        var $ships = $battleground.board(0).filter('.ship');
 
         if (check_ships($ships) == false) {
-            alert("There is either not enough ships or they're set incorrectly");
+            alert('There is either not enough ships or they are set incorrectly');
             return false;
         }
 
@@ -153,19 +154,19 @@ var BattleshipsClass = function() {
         }).toArray();
 
         $.ajax({
-            url: '/games/' + $("#hash").val() + '/ships',
+            url: '/games/' + $('#hash').val() + '/ships',
             type: 'POST',
             data: {ships: shipsArray},
             success: function(response) {
                 custom_log(response);
 
-                start_game($("#playerNumber").val() == 1);
+                start_game($('#playerNumber').val() == 1);
             }
         });
     }
 
     function nameUpdateClickCallback() {
-        $(this).hide().siblings(":text").show().select();
+        $(this).hide().siblings(':text').show().select();
     }
 
     function nameUpdateTextKeyupCallback(event) {
@@ -183,41 +184,41 @@ var BattleshipsClass = function() {
         var player_name = $input.val();
 
         $.ajax({
-            url: '/games/' + $("#hash").val(),
+            url: '/games/' + $('#hash').val(),
             type: 'PUT',
             data: {name: player_name},
             success: function(response) {
                 custom_log(response);
 
-                $input.hide().siblings("span").show();
-                $(".player_name").text(player_name);
+                $input.hide().siblings('span').show();
+                $('.player_name').text(player_name);
             }
         });
     }
 
     function nameUpdateTextBlurCallback() {
-        if ($(this).has(":visible")) {
-            var player_name = $(this).siblings("span").text();
+        if ($(this).has(':visible')) {
+            var player_name = $(this).siblings('span').text();
 
-            $(this).hide().val(player_name).siblings("span").show();
+            $(this).hide().val(player_name).siblings('span').show();
         }
     }
 
     function updateClickCallback() {
-        update_execute = !update_execute;
+        updateExecute = !updateExecute;
 
-        if (update_execute) {
-            $(this).text("Updates [ON]");
+        if (updateExecute) {
+            $(this).text('Updates [ON]');
             get_updates();
         } else {
-            $(this).text("Updates [OFF]");
+            $(this).text('Updates [OFF]');
             stop_update();
         }
     }
 
     function newGameClickCallback() {
-        if (confirm("Are you sure you want to quit the current game?")) {
-            window.location = window.location.protocol + "//" + window.location.hostname + window.location.pathname;
+        if (confirm('Are you sure you want to quit the current game?')) {
+            window.location = window.location.protocol + '//' + window.location.hostname + window.location.pathname;
         }
     }
 
@@ -228,13 +229,13 @@ var BattleshipsClass = function() {
 
         var text = $.trim($chatbox.val());
 
-        if (text == "") {
+        if (text == '') {
             return true;
         }
 
         $chatbox.prop('disabled', true);
         $.ajax({
-            url: '/games/' + $("#hash").val() + '/chats',
+            url: '/games/' + $('#hash').val() + '/chats',
             type: 'POST',
             data: {text: text},
             success: function(response) {
@@ -243,25 +244,25 @@ var BattleshipsClass = function() {
                 $chatbox.prop('disabled', false);
 
                 chat_append(text, true, timestamp);
-                $chatbox.val("");
+                $chatbox.val('');
             }
         });
     }
 
 
     function shot(element) {
-        if (!game_started) {
-            alert("You can't shoot at the moment - game is not started");
+        if (!gameStarted) {
+            alert('You cannot shoot at the moment - game is not started');
             return false;
         }
 
-        if (shot_prevent) {
-            alert("You can't shoot at the moment - other player has not started or it's not your turn!");
+        if (shotPrevent) {
+            alert('You cannot shoot at the moment - other player has not started or it is not your turn!');
             return false;
         }
 
-        if ($(element).is(".miss, .hit")) {
-            custom_log("You either already shot this field, or no ship could be there");
+        if ($(element).is('.miss, .hit')) {
+            custom_log('You either already shot this field, or no ship could be there');
             return;
         }
 
@@ -270,17 +271,17 @@ var BattleshipsClass = function() {
         set_turn();
 
         $.ajax({
-            url: '/games/' + $("#hash").val() + '/shots/',
+            url: '/games/' + $('#hash').val() + '/shots/',
             type: 'POST',
             data: {shot: coords},
             success: function(response) {
                 var shotResult = response.shotResult;
                 custom_log(shotResult);
 
-                set_turn(shotResult != "miss");
+                set_turn(shotResult != 'miss');
                 mark_shot(1, coords, shotResult);
 
-                if (shotResult == "sunk") {
+                if (shotResult == 'sunk') {
                     check_game_end();
                 }
             },
@@ -296,65 +297,65 @@ var BattleshipsClass = function() {
 
         // to convert: 1 -> [0,1], 12 -> [1,2], 167 -> [6,7]
         var temp    = (index >= 100) ? (index - 100) : index;
-            temp    = (temp < 10 ? "0" : "") + temp;
-        var indexes = temp.split("");
+            temp    = (temp < 10 ? '0' : '') + temp;
+        var indexes = temp.split('');
 
-        var cord_y = axis_y[ indexes[1] ];
-        var cord_x = axis_x[ indexes[0] ];
+        var cord_y = axisY[ indexes[1] ];
+        var cord_x = axisX[ indexes[0] ];
 
         return cord_y + cord_x;
     }
 
     function get_field_by_coords(coords, board_number) {
-        if ($.type(coords) != "array") {
+        if ($.type(coords) != 'array') {
             coords = [coords.substr(0, 1), parseInt(coords.substr(1))];
         }
-        var position_y = $.inArray(coords[0], axis_y);
-        var position_x = $.inArray(coords[1], axis_x);
+        var position_y = $.inArray(coords[0], axisY);
+        var position_x = $.inArray(coords[1], axisX);
 
-        // parseInt("08") -> 0
+        // parseInt('08') -> 0
         var position = parseInt([position_x, position_y].join(''), 10) + (board_number * 100);
 
         return $battleground.eq(position);
     }
 
     function mark_shot(board_number, coords, type, tendency) {
-        if ($.type(coords) != "array") {
+        if ($.type(coords) != 'array') {
             coords = [coords.substr(0, 1), parseInt(coords.substr(1))];
         }
         var field         = get_field_by_coords(coords, board_number);
-        var position_y    = $.inArray(coords[0], axis_y);
-        var position_x    = $.inArray(coords[1], axis_x);
+        var position_y    = $.inArray(coords[0], axisY);
+        var position_x    = $.inArray(coords[1], axisX);
         var mark_class    = '';
         var missed_coords = [];
 
         if (board_number == 0 && type == null) {
-            if (field.hasClass("ship")) {
-                type = is_sunk(coords) ? "sunk" : "hit";
+            if (field.hasClass('ship')) {
+                type = is_sunk(coords) ? 'sunk' : 'hit';
             } else {
-                type = "miss";
+                type = 'miss';
             }
         }
 
 
-        if (type == "miss") {
-            mark_class = "miss";
+        if (type == 'miss') {
+            mark_class = 'miss';
             missed_coords.push(coords);
         }
 
-        if (type == "hit" || type == "sunk") {
-            mark_class = "hit";
-            missed_coords.push( (position_y > 0 && position_x > 0) ? [axis_y[ position_y - 1 ], axis_x[ position_x - 1 ]] : [] );
-            missed_coords.push( (position_y > 0 && position_x < 9) ? [axis_y[ position_y - 1 ], axis_x[ position_x + 1 ]] : [] );
-            missed_coords.push( (position_y < 9 && position_x < 9) ? [axis_y[ position_y + 1 ], axis_x[ position_x + 1 ]] : [] );
-            missed_coords.push( (position_y < 9 && position_x > 0) ? [axis_y[ position_y + 1 ], axis_x[ position_x - 1 ]] : [] );
+        if (type == 'hit' || type == 'sunk') {
+            mark_class = 'hit';
+            missed_coords.push( (position_y > 0 && position_x > 0) ? [axisY[ position_y - 1 ], axisX[ position_x - 1 ]] : [] );
+            missed_coords.push( (position_y > 0 && position_x < 9) ? [axisY[ position_y - 1 ], axisX[ position_x + 1 ]] : [] );
+            missed_coords.push( (position_y < 9 && position_x < 9) ? [axisY[ position_y + 1 ], axisX[ position_x + 1 ]] : [] );
+            missed_coords.push( (position_y < 9 && position_x > 0) ? [axisY[ position_y + 1 ], axisX[ position_x - 1 ]] : [] );
         }
 
-        if (type == "sunk") {
-            missed_coords.push( (position_y > 0)                   ? [axis_y[ position_y - 1 ], coords[1]]                : [] );
-            missed_coords.push( (position_y < 9)                   ? [axis_y[ position_y + 1 ], coords[1]]                : [] );
-            missed_coords.push( (position_x < 9)                   ? [coords[0], axis_x[ position_x + 1 ]]                : [] );
-            missed_coords.push( (position_x > 0)                   ? [coords[0], axis_x[ position_x - 1 ]]                : [] );
+        if (type == 'sunk') {
+            missed_coords.push( (position_y > 0)                   ? [axisY[ position_y - 1 ], coords[1]]                : [] );
+            missed_coords.push( (position_y < 9)                   ? [axisY[ position_y + 1 ], coords[1]]                : [] );
+            missed_coords.push( (position_x < 9)                   ? [coords[0], axisX[ position_x + 1 ]]                : [] );
+            missed_coords.push( (position_x > 0)                   ? [coords[0], axisX[ position_x - 1 ]]                : [] );
         }
 
 
@@ -365,10 +366,10 @@ var BattleshipsClass = function() {
 
             var temp_field = get_field_by_coords(missed_coords[i], board_number);
 
-            if (temp_field.hasClass("hit") && type == "sunk") {
+            if (temp_field.hasClass('hit') && type == 'sunk') {
                 mark_shot(board_number, missed_coords[i], type, i);
             } else {
-                temp_field.addClass("miss");
+                temp_field.addClass('miss');
             }
         }
 
@@ -381,17 +382,17 @@ var BattleshipsClass = function() {
     }
 
     function is_sunk(coords, tendency) {
-        if ($.type(coords) != "array") {
+        if ($.type(coords) != 'array') {
             coords = [coords.substr(0, 1), parseInt(coords.substr(1))];
         }
-        var position_y    = $.inArray(coords[0], axis_y);
-        var position_x    = $.inArray(coords[1], axis_x);
+        var position_y    = $.inArray(coords[0], axisY);
+        var position_x    = $.inArray(coords[1], axisX);
         var check_coords  = [];
 
-        check_coords.push( (position_y > 0) ? [axis_y[ position_y - 1 ], coords[1]] : [] );
-        check_coords.push( (position_y < 9) ? [axis_y[ position_y + 1 ], coords[1]] : [] );
-        check_coords.push( (position_x < 9) ? [coords[0], axis_x[ position_x + 1 ]] : [] );
-        check_coords.push( (position_x > 0) ? [coords[0], axis_x[ position_x - 1 ]] : [] );
+        check_coords.push( (position_y > 0) ? [axisY[ position_y - 1 ], coords[1]] : [] );
+        check_coords.push( (position_y < 9) ? [axisY[ position_y + 1 ], coords[1]] : [] );
+        check_coords.push( (position_x < 9) ? [coords[0], axisX[ position_x + 1 ]] : [] );
+        check_coords.push( (position_x > 0) ? [coords[0], axisX[ position_x - 1 ]] : [] );
 
 
         for (var i = 0; i < check_coords.length; i++) {
@@ -401,11 +402,11 @@ var BattleshipsClass = function() {
 
             var temp_field = get_field_by_coords(check_coords[i], 0);
 
-            if (temp_field.hasClass("hit")) {
+            if (temp_field.hasClass('hit')) {
                 if (is_sunk(check_coords[i], i) == false) {
                     return false;
                 }
-            } else if (temp_field.hasClass("ship")) {
+            } else if (temp_field.hasClass('ship')) {
                 return false;
             }
         }
@@ -415,18 +416,18 @@ var BattleshipsClass = function() {
     }
 
     function get_updates() {
-        if (update_execute !== true) {
+        if (updateExecute !== true) {
             return false;
         }
 
         updateXHR = $.ajax({
-            url: '/games/' + $("#hash").val() + '/updates/' + lastIdEvents,
+            url: '/games/' + $('#hash').val() + '/updates/' + lastIdEvents,
             type: 'GET',
             success: function(response) {
                 custom_log(response);
 
-                if (update_execute !== false) {
-                    last_timeout = setTimeout(get_updates, update_interval);
+                if (updateExecute !== false) {
+                    lastIimeout = setTimeout(get_updates, updateInterval);
                 }
 
                 if (response === null || response === false || response.length == 0) {
@@ -440,25 +441,25 @@ var BattleshipsClass = function() {
 
                         switch (key) {
                             case 'name_update':
-                                $(".other_name").text(update);
+                                $('.other_name').text(update);
                                 break;
 
                             case 'start_game':
-                                set_turn($("#playerNumber").val() == 1);
-                                other_started = true;
-                                game_started = player_started && other_started;
+                                set_turn($('#playerNumber').val() == 1);
+                                otherStarted = true;
+                                gameStarted = playerStarted && otherStarted;
                                 break;
 
                             case 'join_game':
-                                $(".board_menu:eq(1) span").css({fontWeight: "bold"});
-                                $("#game_link").text("");
+                                $('.board_menu:eq(1) span').css({fontWeight: 'bold'});
+                                $('#game_link').text('');
                                 break;
 
                             case 'shot':
                                 var shotResult = mark_shot(0, update);
-                                if (shotResult == "miss") {
+                                if (shotResult == 'miss') {
                                     set_turn(true);
-                                } else if (shotResult == "sunk") {
+                                } else if (shotResult == 'sunk') {
                                     check_game_end();
                                 }
                                 break;
@@ -478,14 +479,14 @@ var BattleshipsClass = function() {
     }
 
     function stop_update() {
-        clearTimeout(last_timeout);
-        update_execute = false;
+        clearTimeout(lastIimeout);
+        updateExecute = false;
         updateXHR.abort();
     }
 
     function get_battle() {
         $.ajax({
-            url: '/games/' + $("#hash").val(),
+            url: '/games/' + $('#hash').val(),
             type: 'GET',
             success: function(response) {
                 var key;
@@ -495,14 +496,14 @@ var BattleshipsClass = function() {
                 var chats  = response.chats;
                 lastIdEvents = response.lastIdEvents;
 
-                other_started = response.otherStarted;
+                otherStarted = response.otherStarted;
                 if (response.playerStarted) {
                     start_game(response.whoseTurn == response.playerNumber);
                 }
 
                 for (key in response.playerShips) {
                     var field = get_field_by_coords(response.playerShips[key], 0);
-                    field.addClass("ship");
+                    field.addClass('ship');
                 }
 
                 for (key in battle.playerGround) {
@@ -519,35 +520,35 @@ var BattleshipsClass = function() {
 
                 check_game_end();
                 // start AJAX calls for updates
-                $("#update").triggerHandler('click');
+                $('#update').triggerHandler('click');
             }
         });
     }
 
     function chat_append(text, isMe, timestamp) {
-        var name = $(".board_menu:eq(" + Number(!isMe) + ") span").text();
+        var name = $('.board_menu:eq(' + Number(!isMe) + ') span').text();
         var date = new Date(timestamp * 1000);
         var formattedDate = date.getFullYear()
-            + "-" + (date.getMonth() < 10 ? "0" : "") + date.getMonth()
-            + "-" + (date.getDate() < 10 ? "0" : "") + date.getDate()
-            + " " + (date.getHours() < 10 ? "0" : "") + date.getHours()
-            + ":" + (date.getMinutes() < 10 ? "0" : "") + date.getMinutes()
-            + ":" + (date.getSeconds() < 10 ? "0" : "") + date.getSeconds();
-        var $time = $("<span>").addClass("time").text("[" + formattedDate + "] ");
-        var $chatterName = $("<span>").addClass((isMe ? "player_name" : "other_name")).text(name);
-        var $name = $("<span>").addClass("name").append($chatterName).append(": ");
-        var $text = $("<span>").text(text);
-        var $chat_row = $("<p>").append($time).append($name).append($text);
+            + '-' + (date.getMonth() < 10 ? '0' : '') + date.getMonth()
+            + '-' + (date.getDate() < 10 ? '0' : '') + date.getDate()
+            + ' ' + (date.getHours() < 10 ? '0' : '') + date.getHours()
+            + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
+            + ':' + (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
+        var $time = $('<span>').addClass('time').text('[' + formattedDate + '] ');
+        var $chatterName = $('<span>').addClass((isMe ? 'player_name' : 'other_name')).text(name);
+        var $name = $('<span>').addClass('name').append($chatterName).append(': ');
+        var $text = $('<span>').text(text);
+        var $chat_row = $('<p>').append($time).append($name).append($text);
 
-        var $chats = $("#chatbox div.chats");
+        var $chats = $('#chatbox div.chats');
 
-        var t = $chats.find(".time");
+        var t = $chats.find('.time');
         var l = t.length;
         var i = l - 1;
 
         // finding a place to put a new row into (in case if new updated chat is older than an existing one)
         for (i; i >= 0; i--) {
-            if ((t.eq(i).text().replace(/\[|\]/g, "") <= formattedDate)) {
+            if ((t.eq(i).text().replace(/\[|\]/g, '') <= formattedDate)) {
                 break;
             }
         }
@@ -555,47 +556,47 @@ var BattleshipsClass = function() {
         if ((l == 0) || (i == l - 1)) {
             $chats.append($chat_row);
         } else {
-            $chats.children("p").eq(i + 1).before($chat_row);
+            $chats.children('p').eq(i + 1).before($chat_row);
         }
 
         $chats.clearQueue().animate({
-            scrollTop: $chats.children("p").height() * i
+            scrollTop: $chats.children('p').height() * i
         }, 'slow');
     }
 
     function start_game(isMyTurn) {
-        player_started = true;
-        game_started = player_started && other_started;
-        $("#start").prop('disabled', true);
-        $("#random_shot, #random_ships").toggle();
+        playerStarted = true;
+        gameStarted = playerStarted && otherStarted;
+        $('#start').prop('disabled', true);
+        $('#random_shot, #random_ships').toggle();
         set_turn(isMyTurn);
     }
 
     function check_game_end() {
-        if (game_ended) {
-            return game_ended;
+        if (gameEnded) {
+            return gameEnded;
         }
 
-        if ($battleground.board(0).filter(".hit").length >= 20) {
-            alert("You lost");
-            game_ended = true;
-        } else if ($battleground.board(1).filter(".hit").length >= 20) {
-            alert("You won");
-            game_ended = true;
+        if ($battleground.board(0).filter('.hit').length >= 20) {
+            alert('You lost');
+            gameEnded = true;
+        } else if ($battleground.board(1).filter('.hit').length >= 20) {
+            alert('You won');
+            gameEnded = true;
         }
 
-        return game_ended;
+        return gameEnded;
     }
 
     function set_turn(isMyTurn) {
-        if ($.type(isMyTurn) == "undefined") {
-            $(".board_menu span").removeClass("turn");
+        if ($.type(isMyTurn) == 'undefined') {
+            $('.board_menu span').removeClass('turn');
         } else {
-            $(".board_menu:eq(" + Number(!isMyTurn) + ") span").addClass("turn");
-            $(".board_menu:eq(" + Number(isMyTurn) + ") span").removeClass("turn");
+            $('.board_menu:eq(' + Number(!isMyTurn) + ') span').addClass('turn');
+            $('.board_menu:eq(' + Number(isMyTurn) + ') span').removeClass('turn');
         }
-        shot_prevent = !isMyTurn;
-        $("#random_shot").prop('disabled', !isMyTurn);
+        shotPrevent = !isMyTurn;
+        $('#random_shot').prop('disabled', !isMyTurn);
     }
 
     function check_ships($ships) {
@@ -615,7 +616,7 @@ var BattleshipsClass = function() {
 
         // check if no edge connection
         for (i = 0; i < ships_array.length; i++) {
-            idx = ((ships_array[i] < 10 ? "0" : "") + ships_array[i]).split("");
+            idx = ((ships_array[i] < 10 ? '0' : '') + ships_array[i]).split('');
 
             if (idx[0] == 9) {
                 continue;
@@ -636,7 +637,7 @@ var BattleshipsClass = function() {
                 continue;
             }
 
-            idx = ((ships_array[i] < 10 ? "0" : "") + ships_array[i]).split("");
+            idx = ((ships_array[i] < 10 ? '0' : '') + ships_array[i]).split('');
 
             for (j = 0; j < direction_multipliers.length; j++) {
                 var border_index = parseInt(j) == 1 ? 0 : 1;
@@ -683,24 +684,24 @@ var BattleshipsClass = function() {
     }
 
     function parse_chatbox_keys() {
-        var temp = chatbox_keys.split(",");
-        chatbox_keys = [];
+        var temp = chatboxKeys.split(',');
+        chatboxKeys = [];
 
         for (var i = 0; i < temp.length; i++) {
-            var range = temp[i].split("-");
+            var range = temp[i].split('-');
 
             if (range.length == 1) {
-                chatbox_keys.push(parseInt(range[0]));
+                chatboxKeys.push(parseInt(range[0]));
             } else {
                 for (var j = range[0]; j <= range[1]; j++) {
-                    chatbox_keys.push(parseInt(j));
+                    chatboxKeys.push(parseInt(j));
                 }
             }
         }
     }
 
     function random_shot() {
-        var $empty_fields = $battleground.board(1).not(".miss, .hit");
+        var $empty_fields = $battleground.board(1).not('.miss, .hit');
         // random from 0 to the amount of empty fields - 1 (because first's index is 0)
         var index = Math.floor(Math.random() * $empty_fields.length);
         $empty_fields.eq(index).trigger('click');
@@ -711,14 +712,14 @@ var BattleshipsClass = function() {
         var direction_multipliers = [1, 10];
         var ships_types = {1:4, 2:3, 3:2, 4:1};
 
-        $battleground.board(0).filter(".ship").click();
+        $battleground.board(0).filter('.ship').click();
         for (var number_of_ships in ships_types) {
             var masts = ships_types[number_of_ships];
 
             for (var j = 0; j < number_of_ships; j++) {
                 var orientation = orientations[ Math.floor(Math.random() * orientations.length) ];
                 mark_restricted_starts(masts, orientation);
-                var $startFields = $battleground.board(0).not(".restricted");
+                var $startFields = $battleground.board(0).not('.restricted');
 
                 var index = Math.floor(Math.random() * $startFields.length);
                 var idx = $battleground.index( $startFields.eq(index) );
@@ -728,9 +729,9 @@ var BattleshipsClass = function() {
             }
         }
 
-        if (check_ships($battleground.board(0).filter(".ship")) == false) {
+        if (check_ships($battleground.board(0).filter('.ship')) == false) {
             if (event.data && event.data.retry > 0) {
-                $battleground.board(0).removeClass("ship");
+                $battleground.board(0).removeClass('ship');
                 event.data.retry--;
                 return random_ships(event);
             }
@@ -738,7 +739,7 @@ var BattleshipsClass = function() {
             return false;
         }
 
-        $battleground.board(0).removeClass("restricted");
+        $battleground.board(0).removeClass('restricted');
 
         return true;
     }
@@ -746,9 +747,9 @@ var BattleshipsClass = function() {
     function mark_restricted_starts(masts, orientation) {
         var direction_multipliers = [1, 10];
 
-        var marks = $battleground.board(0).filter(".ship").map(function() {
+        var marks = $battleground.board(0).filter('.ship').map(function() {
             var index = $battleground.index(this);
-            var idx = ((index < 10 ? "0" : "") + index).split("");
+            var idx = ((index < 10 ? '0' : '') + index).split('');
             var border_distance = parseInt(idx[Number(!orientation)]);
 
             var mark = [index];
@@ -783,7 +784,7 @@ var BattleshipsClass = function() {
 
             for (var k = 2; (border_distance - k >= 0) && (k <= masts); k++) {
                 var safe_index = index - (k * direction_multipliers[orientation]);
-                var safe_idx = ((safe_index < 10 ? "0" : "") + safe_index).split("");
+                var safe_idx = ((safe_index < 10 ? '0' : '') + safe_index).split('');
                 mark.push(safe_index);
 
                 if (safe_idx[orientation] > 0) {
@@ -797,16 +798,16 @@ var BattleshipsClass = function() {
             return mark;
         }).toArray();
 
-        $battleground.board(0).removeClass("restricted");
+        $battleground.board(0).removeClass('restricted');
 
         for (var i = 0; i < marks.length; i++) {
-            $battleground.board(0).eq(marks[i]).addClass("restricted");
+            $battleground.board(0).eq(marks[i]).addClass('restricted');
         }
 
         if (orientation == 0) {
-            $battleground.board(0).filter('div:nth-child(n+' + (13 - masts) + ')').addClass("restricted");
+            $battleground.board(0).filter('div:nth-child(n+' + (13 - masts) + ')').addClass('restricted');
         } else {
-            $battleground.board(0).slice((11 - masts) * 10).addClass("restricted");
+            $battleground.board(0).slice((11 - masts) * 10).addClass('restricted');
         }
     }
 
@@ -815,10 +816,10 @@ var BattleshipsClass = function() {
             return true;
         }
 
-        var log_me = ($.type(log) !== "object") ? log : JSON.stringify(log);
+        var log_me = ($.type(log) !== 'object') ? log : JSON.stringify(log);
 
-        $("div.log").clearQueue().append($("<p>").text(log_me)).animate({
-            scrollTop: $("div.log").prop('scrollHeight')
+        $('div.log').clearQueue().append($('<p>').text(log_me)).animate({
+            scrollTop: $('div.log').prop('scrollHeight')
         }, 'slow');
 
         console.log(log);
