@@ -28,8 +28,7 @@ trait MockMethodsTrait
         }
 
         $this->calledMethods[$method][] = $args;
-        if ($hasReturnValue) {
-            return $this->disabledMethods[$method];
-        }
+
+        return $hasReturnValue ? $this->disabledMethods[$method] : null;
     }
 }
