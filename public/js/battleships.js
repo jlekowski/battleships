@@ -14,7 +14,7 @@
 
 var BattleshipsClass = function() {
     // events log management
-    var debug = true,
+    var debug = !!localStorage.getItem('debug'),
     // battle boards axis Y legend
         axisY = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
     // battle boards axis X legend
@@ -230,6 +230,25 @@ var BattleshipsClass = function() {
         var text = $.trim($chatbox.val());
 
         if (text == '') {
+            return true;
+        }
+
+        if (text === '\\debug') {
+            localStorage.setItem('debug', true);
+            debug = true;
+            $('#update, div.log').show();
+            $chatbox.val('');
+            return true;
+        }
+
+        if (text === '\\nodebug') {
+            localStorage.removeItem('debug');
+            debug = false;
+            $('#update, div.log').hide();
+            if (!updateExecute) {
+                $('#update').triggerHandler('click');
+            }
+            $chatbox.val('');
             return true;
         }
 
