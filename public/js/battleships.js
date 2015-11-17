@@ -112,8 +112,8 @@ var BattleshipsClass = function() {
     };
 
     function documentKeydownCallback(event) {
-        // if ctr or alt pressed
-        if ((event.which == 17) || (event.which == 18)) {
+        // if ctr, alt, or cmd (Mac) pressed
+        if ((event.which == 17) || (event.which == 18) || (event.which == 91)) {
             focusPrevent = true;
             return true;
         }
