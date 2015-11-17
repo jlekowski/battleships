@@ -44,6 +44,11 @@ php bin/client.php
 
 ## === Changelog ===
 
+* version **0.6.2**
+ * Refactored code (JS formatting)
+ * Added command to toggle debug mode
+ * Added Travis build check
+ * Fixed bugs (name change, Mac Cmd key)
 * version **0.6.1**
  * Changed REST response format
  * Added more unit tests
