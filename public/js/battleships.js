@@ -60,6 +60,9 @@ var BattleshipsClass = function() {
             },
             error: function(jqXHR) {
                 custom_log(jqXHR.responseJSON);
+            },
+            dataFilter: function(data, type) {
+                return (type === 'json' && data === '') ? null : data;
             }
         });
 
