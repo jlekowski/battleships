@@ -2,6 +2,8 @@
 
 # Battleships
 
+## This is a legacy project! Please use [API](https://github.com/jlekowski/battleships-api) and [Web Client](https://github.com/jlekowski/battleships-webclient) instead, and follow up on [CLI Client](https://github.com/jlekowski/battleships-cliclient).
+
 ## Battleships (sea battle) game for web and command line (PHP CLI)
 
 App is by default set in dev/debug mode for long calls (see **Setup** section) which might not work well on some of shared hosting.
